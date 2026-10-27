@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tencent.wxcloudrun.dao.MerchantApplicationMapper">
+  <resultMap id="applicationMap" type="com.tencent.wxcloudrun.model.MerchantApplication">
+    <id property="id" column="_id"/><result property="applicantOpenid" column="applicantOpenid"/>
+    <result property="storeName" column="storeName"/><result property="ownerName" column="ownerName"/>
+    <result property="phone" column="phone"/><result property="wechatContact" column="wechatContact"/>
+    <result property="businessHours" column="businessHours"/>
+    <result property="businessCategories" column="businessCategories" typeHandler="com.tencent.wxcloudrun.dao.StringListTypeHandler"/>
+    <result property="serviceDescription" column="serviceDescription"/><result property="notice" column="notice"/>
+    <result property="minimumOrder" column="minimumOrder"/><result property="deliveryFee" column="deliveryFee"/>
+    <result property="deliveryMinutes" column="deliveryMinutes"/><result property="status" column="status"/>
+    <result property="publicMessage" column="publicMessage"/><result property="internalNote" column="internalNote"/>
+    <result property="feeAmount" column="feeAmount"/><result property="paymentInstruction" column="paymentInstruction"/>
+    <result property="assignedOperatorOpenid" column="assignedOperatorOpenid"/>
+    <result property="contactLogs" column="contactLogs" typeHandler="com.tencent.wxcloudrun.dao.DataListTypeHandler"/>
+    <result property="storeId" column="storeId"/><result property="approvedBy" column="approvedBy"/>
+    <result property="rejectedBy" column="rejectedBy"/><result property="submittedAt" column="submittedAt"/>
+    <result property="contactedAt" column="contactedAt"/><result property="paidAt" column="paidAt"/>
+    <result property="approvedAt" column="approvedAt"/><result property="rejectedAt" column="rejectedAt"/>
+    <result property="createdAt" column="createdAt"/><result property="updatedAt" column="updatedAt"/>
+  </resultMap>
+  <sql id="columns">`_id`, `applicantOpenid`, `storeName`, `ownerName`, `phone`, `wechatContact`, `businessHours`, `businessCategories`, `serviceDescription`, `notice`, `minimumOrder`, `deliveryFee`, `deliveryMinutes`, `status`, `publicMessage`, `internalNote`, `feeAmount`, `paymentInstruction`, `assignedOperatorOpenid`, `contactLogs`, `storeId`, `approvedBy`, `rejectedBy`, `submittedAt`, `contactedAt`, `paidAt`, `approvedAt`, `rejectedAt`, `createdAt`, `updatedAt`</sql>
+  <select id="selectById" resultMap="applicationMap">
+    SELECT <include refid="columns"/> FROM `merchant_applications` WHERE `_id`=#{id}<if test="lock"> FOR UPDATE</if>
+  </select>
+  <select id="selectLatest" resultMap="applicationMap">
+    SELECT <include refid="columns"/> FROM `merchant_applications` WHERE `applicantOpenid`=#{applicantOpenid}
+    ORDER BY `createdAt` DESC, `_id` DESC LIMIT 1<if test="lock"> FOR UPDATE</if>
+  </select>
+  <select id="selectByStatus" resultMap="applicationMap">
+    SELECT <include refid="columns"/> FROM `merchant_applications`
+    <if test="status != null and status != '' and status != 'ALL'">WHERE `status`=#{status}</if>
+    ORDER BY `updatedAt` DESC, `_id` DESC LIMIT #{limit}
+  </select>
+  <insert id="insert" parameterType="com.tencent.wxcloudrun.model.MerchantApplication">
+    INSERT INTO `merchant_applications` (<include refid="columns"/>) VALUES
+    (#{id},#{applicantOpenid},#{storeName},#{ownerName},#{phone},#{wechatContact},#{businessHours},
+     #{businessCategories,typeHandler=com.tencent.wxcloudrun.dao.StringListTypeHandler},#{serviceDescription},#{notice},
+     #{minimumOrder},#{deliveryFee},#{deliveryMinutes},#{status},#{publicMessage},#{internalNote},#{feeAmount},#{paymentInstruction},
+     #{assignedOperatorOpenid},#{contactLogs,typeHandler=com.tencent.wxcloudrun.dao.DataListTypeHandler},#{storeId},#{approvedBy},
+     #{rejectedBy},#{submittedAt},#{contactedAt},#{paidAt},#{approvedAt},#{rejectedAt},#{createdAt},#{updatedAt})
+  </insert>
+  <update id="updateSubmission" parameterType="com.tencent.wxcloudrun.model.MerchantApplication">
+    UPDATE `merchant_applications` SET `storeName`=#{storeName}, `ownerName`=#{ownerName}, `phone`=#{phone},
+      `wechatContact`=#{wechatContact}, `businessHours`=#{businessHours},
+      `businessCategories`=#{businessCategories,typeHandler=com.tencent.wxcloudrun.dao.StringListTypeHandler},
+      `serviceDescription`=#{serviceDescription}, `notice`=#{notice}, `minimumOrder`=#{minimumOrder}, `deliveryFee`=#{deliveryFee},
+      `deliveryMinutes`=#{deliveryMinutes}, `status`=#{status}, `publicMessage`=#{publicMessage}, `submittedAt`=#{submittedAt}, `updatedAt`=#{updatedAt}
+    WHERE `_id`=#{id} AND `applicantOpenid`=#{applicantOpenid}
+  </update>
+  <update id="updateProgress">
+    UPDATE `merchant_applications` SET `status`=#{application.status}, `publicMessage`=#{application.publicMessage},
+      `internalNote`=#{application.internalNote}, `feeAmount`=#{application.feeAmount}, `paymentInstruction`=#{application.paymentInstruction},
+      `assignedOperatorOpenid`=#{application.assignedOperatorOpenid},
+      `contactLogs`=#{application.contactLogs,typeHandler=com.tencent.wxcloudrun.dao.DataListTypeHandler},
+      `storeId`=#{application.storeId}, `approvedBy`=#{application.approvedBy}, `rejectedBy`=#{application.rejectedBy},
+      `submittedAt`=#{application.submittedAt}, `contactedAt`=#{application.contactedAt}, `paidAt`=#{application.paidAt},
+      `approvedAt`=#{application.approvedAt}, `rejectedAt`=#{application.rejectedAt}, `updatedAt`=#{application.updatedAt}
+    WHERE `_id`=#{application.id} AND `status`=#{expectedStatus}
+  </update>
+  <select id="countByStatus" resultType="long">SELECT COUNT(*) FROM `merchant_applications` WHERE `status`=#{status}</select>
+</mapper>

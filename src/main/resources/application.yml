@@ -1,13 +1,24 @@
 server:
-  port: 80
+  port: ${PORT:80}
+  error:
+    include-message: never
+    include-stacktrace: never
 
 
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${MYSQL_ADDRESS}/${MYSQL_DATABASE:springboot_demo}
+    url: jdbc:mysql://${MYSQL_ADDRESS}/${MYSQL_DATABASE:snacks_cloudrun_test}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
     username: ${MYSQL_USERNAME}
     password: ${MYSQL_PASSWORD}
+  sql:
+    init:
+      mode: never
+  flyway:
+    # 默认禁止自动建表和版本迁移，数据库结构由人工维护。
+    enabled: false
+    baseline-on-migrate: false
+    clean-disabled: true
   mvc:
     view:
       suffix: .html
@@ -15,3 +26,24 @@ spring:
 
 mybatis:
   mapper-locations: classpath*:mapper/*Mapper.xml
+
+snacks:
+  # 默认禁止启动时写入字典、字段说明和通知模板。
+  initialize-on-startup: false
+  wechat:
+    appid: ${WECHAT_APPID:}
+  examples-enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db

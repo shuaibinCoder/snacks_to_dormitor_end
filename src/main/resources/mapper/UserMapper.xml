@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tencent.wxcloudrun.dao.UserMapper">
+  <!-- 只映射 users 表；角色 JSON 使用字符串数组类型转换器。 -->
+  <resultMap id="userMap" type="com.tencent.wxcloudrun.model.User">
+    <id property="id" column="_id"/>
+    <result property="openid" column="openid"/>
+    <result property="roles" column="roles" typeHandler="com.tencent.wxcloudrun.dao.StringListTypeHandler"/>
+    <result property="status" column="status"/>
+    <result property="createdAt" column="createdAt"/>
+    <result property="updatedAt" column="updatedAt"/>
+  </resultMap>
+  <sql id="columns">`_id`, `openid`, `roles`, `status`, `createdAt`, `updatedAt`</sql>
+  <select id="selectById" resultMap="userMap">
+    SELECT <include refid="columns"/> FROM `users` WHERE `_id` = #{id}
+    <if test="lock">FOR UPDATE</if>
+  </select>
+  <select id="selectByOpenid" resultMap="userMap">
+    SELECT <include refid="columns"/> FROM `users` WHERE `openid` = #{openid} LIMIT 1
+    <if test="lock">FOR UPDATE</if>
+  </select>
+  <insert id="insert" parameterType="com.tencent.wxcloudrun.model.User">
+    INSERT INTO `users` (<include refid="columns"/>)
+    VALUES (#{id}, #{openid}, #{roles,typeHandler=com.tencent.wxcloudrun.dao.StringListTypeHandler}, #{status}, #{createdAt}, #{updatedAt})
+  </insert>
+  <insert id="insertIgnore" parameterType="com.tencent.wxcloudrun.model.User">
+    INSERT INTO `users` (<include refid="columns"/>)
+    VALUES (#{id}, #{openid}, #{roles,typeHandler=com.tencent.wxcloudrun.dao.StringListTypeHandler}, #{status}, #{createdAt}, #{updatedAt})
+    ON DUPLICATE KEY UPDATE `_id` = `_id`
+  </insert>
+  <update id="updateStatus">
+    UPDATE `users` SET `status` = #{status}, `updatedAt` = #{updatedAt} WHERE `_id` = #{id}
+  </update>
+  <update id="updateRoles">
+    UPDATE `users` SET `roles` = #{roles,typeHandler=com.tencent.wxcloudrun.dao.StringListTypeHandler}, `updatedAt` = #{updatedAt}
+    WHERE `_id` = #{id}
+  </update>
+</mapper>

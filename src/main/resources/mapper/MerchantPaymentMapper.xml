@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tencent.wxcloudrun.dao.MerchantPaymentMapper">
+  <resultMap id="paymentMap" type="com.tencent.wxcloudrun.model.MerchantPayment">
+    <id property="id" column="_id"/><result property="applicationId" column="applicationId"/>
+    <result property="applicantOpenid" column="applicantOpenid"/><result property="amount" column="amount"/>
+    <result property="paymentMethod" column="paymentMethod"/><result property="paymentTime" column="paymentTime"/>
+    <result property="voucherFileId" column="voucherFileId"/><result property="status" column="status"/>
+    <result property="confirmedBy" column="confirmedBy"/><result property="note" column="note"/>
+    <result property="createdAt" column="createdAt"/><result property="updatedAt" column="updatedAt"/>
+  </resultMap>
+  <sql id="columns">`_id`, `applicationId`, `applicantOpenid`, `amount`, `paymentMethod`, `paymentTime`, `voucherFileId`, `status`, `confirmedBy`, `note`, `createdAt`, `updatedAt`</sql>
+  <select id="selectByApplication" resultMap="paymentMap">
+    SELECT <include refid="columns"/> FROM `merchant_payments` WHERE `applicationId`=#{applicationId}
+    ORDER BY `createdAt` DESC, `_id` DESC LIMIT #{limit}
+  </select>
+  <insert id="insert" parameterType="com.tencent.wxcloudrun.model.MerchantPayment">
+    INSERT INTO `merchant_payments` (<include refid="columns"/>)
+    VALUES (#{id},#{applicationId},#{applicantOpenid},#{amount},#{paymentMethod},#{paymentTime},#{voucherFileId},#{status},#{confirmedBy},#{note},#{createdAt},#{updatedAt})
+  </insert>
+</mapper>

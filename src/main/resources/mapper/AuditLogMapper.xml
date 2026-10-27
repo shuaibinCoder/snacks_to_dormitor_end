@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tencent.wxcloudrun.dao.AuditLogMapper">
+  <resultMap id="auditMap" type="com.tencent.wxcloudrun.model.AuditLog">
+    <id property="id" column="_id"/><result property="operatorOpenid" column="operatorOpenid"/>
+    <result property="operatorRole" column="operatorRole"/><result property="action" column="action"/>
+    <result property="targetType" column="targetType"/><result property="targetId" column="targetId"/>
+    <result property="before" column="before" typeHandler="com.tencent.wxcloudrun.dao.DataTypeHandler"/>
+    <result property="after" column="after" typeHandler="com.tencent.wxcloudrun.dao.DataTypeHandler"/>
+    <result property="reason" column="reason"/><result property="createdAt" column="createdAt"/>
+    <result property="updatedAt" column="updatedAt"/>
+  </resultMap>
+  <sql id="columns">`_id`, `operatorOpenid`, `operatorRole`, `action`, `targetType`, `targetId`, `before`, `after`, `reason`, `createdAt`, `updatedAt`</sql>
+  <insert id="insert" parameterType="com.tencent.wxcloudrun.model.AuditLog">
+    INSERT INTO `audit_logs` (<include refid="columns"/>)
+    VALUES (#{id},#{operatorOpenid},#{operatorRole},#{action},#{targetType},#{targetId},
+      #{before,typeHandler=com.tencent.wxcloudrun.dao.DataTypeHandler},#{after,typeHandler=com.tencent.wxcloudrun.dao.DataTypeHandler},
+      #{reason},#{createdAt},#{updatedAt})
+  </insert>
+  <select id="selectRecent" resultMap="auditMap">
+    SELECT <include refid="columns"/> FROM `audit_logs` ORDER BY `createdAt` DESC, `_id` DESC LIMIT #{limit}
+  </select>
+</mapper>

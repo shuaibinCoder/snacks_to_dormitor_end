@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tencent.wxcloudrun.dao.PlatformUserMapper">
+  <resultMap id="platformUserMap" type="com.tencent.wxcloudrun.model.PlatformUser">
+    <id property="id" column="_id"/>
+    <result property="openid" column="openid"/><result property="role" column="role"/>
+    <result property="displayName" column="displayName"/><result property="phone" column="phone"/>
+    <result property="status" column="status"/><result property="createdBy" column="createdBy"/>
+    <result property="createdAt" column="createdAt"/><result property="updatedAt" column="updatedAt"/>
+  </resultMap>
+  <sql id="columns">`_id`, `openid`, `role`, `displayName`, `phone`, `status`, `createdBy`, `createdAt`, `updatedAt`</sql>
+  <select id="selectByOpenid" resultMap="platformUserMap">
+    SELECT <include refid="columns"/> FROM `platform_users` WHERE `openid` = #{openid}
+    <if test="status != null">AND `status` = #{status}</if> LIMIT 1
+    <if test="lock">FOR UPDATE</if>
+  </select>
+  <select id="selectAll" resultMap="platformUserMap">
+    SELECT <include refid="columns"/> FROM `platform_users` ORDER BY `updatedAt` DESC, `_id` DESC LIMIT #{limit}
+  </select>
+  <select id="selectActiveAfter" resultMap="platformUserMap">
+    SELECT <include refid="columns"/> FROM `platform_users`
+    WHERE `status`='ACTIVE' AND `_id` &gt; #{afterId} ORDER BY `_id` LIMIT #{limit}
+  </select>
+  <insert id="insert" parameterType="com.tencent.wxcloudrun.model.PlatformUser">
+    INSERT INTO `platform_users` (<include refid="columns"/>)
+    VALUES (#{id}, #{openid}, #{role}, #{displayName}, #{phone}, #{status}, #{createdBy}, #{createdAt}, #{updatedAt})
+  </insert>
+  <update id="update" parameterType="com.tencent.wxcloudrun.model.PlatformUser">
+    UPDATE `platform_users` SET `role` = #{role}, `displayName` = #{displayName}, `phone` = #{phone},
+      `status` = #{status}, `updatedAt` = #{updatedAt} WHERE `_id` = #{id}
+  </update>
+</mapper>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tencent.wxcloudrun.dao.NotificationPreferenceMapper">
+  <resultMap id="preferenceMap" type="com.tencent.wxcloudrun.model.NotificationPreference">
+    <id property="id" column="_id"/><result property="openid" column="openid"/>
+    <result property="templateKey" column="templateKey"/><result property="subscriptionRole" column="subscriptionRole"/>
+    <result property="lastPermission" column="lastPermission"/><result property="grantedCount" column="grantedCount"/>
+    <result property="lastGrantId" column="lastGrantId"/><result property="lastScene" column="lastScene"/>
+    <result property="createdAt" column="createdAt"/><result property="updatedAt" column="updatedAt"/>
+  </resultMap>
+  <sql id="columns">`_id`, `openid`, `templateKey`, `subscriptionRole`, `lastPermission`, `grantedCount`, `lastGrantId`, `lastScene`, `createdAt`, `updatedAt`</sql>
+  <select id="select" resultMap="preferenceMap">
+    SELECT <include refid="columns"/> FROM `notification_preferences`
+    WHERE `openid`=#{openid} AND `templateKey`=#{templateKey} AND `subscriptionRole`=#{subscriptionRole} LIMIT 1<if test="lock"> FOR UPDATE</if>
+  </select>
+  <select id="selectByOpenid" resultMap="preferenceMap">
+    SELECT <include refid="columns"/> FROM `notification_preferences` WHERE `openid`=#{openid} ORDER BY `createdAt`, `_id`
+  </select>
+  <insert id="insertIgnore" parameterType="com.tencent.wxcloudrun.model.NotificationPreference">
+    INSERT INTO `notification_preferences` (<include refid="columns"/>)
+    VALUES (#{id},#{openid},#{templateKey},#{subscriptionRole},#{lastPermission},#{grantedCount},#{lastGrantId},#{lastScene},#{createdAt},#{updatedAt})
+    ON DUPLICATE KEY UPDATE `_id`=`_id`
+  </insert>
+  <update id="updatePermission">
+    UPDATE `notification_preferences` SET `lastPermission`=#{permission},`lastScene`=#{scene},`lastGrantId`=#{grantId},`updatedAt`=#{updatedAt}
+    WHERE `_id`=#{id}
+  </update>
+  <update id="incrementGrant">
+    UPDATE `notification_preferences` SET `grantedCount`=`grantedCount`+1,`updatedAt`=#{updatedAt} WHERE `_id`=#{id}
+  </update>
+  <update id="consumeGrant">
+    UPDATE `notification_preferences` SET `grantedCount`=GREATEST(`grantedCount`-1,0),`updatedAt`=#{updatedAt} WHERE `_id`=#{id}
+  </update>
+  <update id="clearGrants">
+    UPDATE `notification_preferences` SET `grantedCount`=0,`lastPermission`=#{permission},`updatedAt`=#{updatedAt} WHERE `_id`=#{id}
+  </update>
+</mapper>

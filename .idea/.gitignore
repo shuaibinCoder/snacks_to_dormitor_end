@@ -1,0 +1,70 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+
+# ========== 构建产物 ==========
+target/
+build/
+.gradle/
+out/
+*.class
+
+# ========== 打包产物 ==========
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+
+# ========== Maven / Gradle ==========
+!/.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.properties
+mvnw
+mvnw.cmd
+
+# ========== IDE: IntelliJ IDEA ==========
+.idea/
+*.iml
+*.iws
+*.ipr
+*.iws
+
+# ========== IDE: Eclipse / STS ==========
+.apt_generated/
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+
+# ========== IDE: VS Code ==========
+.vscode/
+*.swp
+*.swo
+
+# ========== 日志 ==========
+*.log
+logs/
+
+# ========== 临时文件 ==========
+*.tmp
+*.cache
+*.diff
+*.patch
+*.bak
+
+# ========== 系统文件 ==========
+.DS_Store
+Thumbs.db
+desktop.ini
+hs_err_pid*
+
+# ========== 本地配置 / 敏感信息 ==========
+.env
+.env.local
+.env.*.local
+application-local.properties
+application-local.yml
+
+/.qoder/*

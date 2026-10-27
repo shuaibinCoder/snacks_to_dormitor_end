@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tencent.wxcloudrun.dao.NotificationDeliveryMapper">
+  <resultMap id="deliveryMap" type="com.tencent.wxcloudrun.model.NotificationDelivery">
+    <id property="id" column="_id"/><result property="notificationId" column="notificationId"/>
+    <result property="recipientOpenid" column="recipientOpenid"/><result property="recipientRole" column="recipientRole"/>
+    <result property="subscriptionRole" column="subscriptionRole"/><result property="channel" column="channel"/>
+    <result property="templateKey" column="templateKey"/><result property="templateId" column="templateId"/>
+    <result property="subscriptionGrantId" column="subscriptionGrantId"/><result property="deliveryStatus" column="deliveryStatus"/>
+    <result property="attemptCount" column="attemptCount"/><result property="lastErrorCode" column="lastErrorCode"/>
+    <result property="lastErrorMessage" column="lastErrorMessage"/><result property="sentAt" column="sentAt"/>
+    <result property="createdAt" column="createdAt"/><result property="updatedAt" column="updatedAt"/>
+  </resultMap>
+  <sql id="columns">`_id`, `notificationId`, `recipientOpenid`, `recipientRole`, `subscriptionRole`, `channel`, `templateKey`, `templateId`, `subscriptionGrantId`, `deliveryStatus`, `attemptCount`, `lastErrorCode`, `lastErrorMessage`, `sentAt`, `createdAt`, `updatedAt`</sql>
+  <insert id="insert" parameterType="com.tencent.wxcloudrun.model.NotificationDelivery">
+    INSERT INTO `notification_deliveries` (<include refid="columns"/>)
+    VALUES (#{id},#{notificationId},#{recipientOpenid},#{recipientRole},#{subscriptionRole},#{channel},#{templateKey},#{templateId},#{subscriptionGrantId},#{deliveryStatus},#{attemptCount},#{lastErrorCode},#{lastErrorMessage},#{sentAt},#{createdAt},#{updatedAt})
+  </insert>
+  <select id="selectByNotification" resultMap="deliveryMap">
+    SELECT <include refid="columns"/> FROM `notification_deliveries`
+    WHERE `notificationId`=#{notificationId} AND `channel`=#{channel} LIMIT 1<if test="lock"> FOR UPDATE</if>
+  </select>
+  <update id="claimPending" parameterType="com.tencent.wxcloudrun.model.NotificationDelivery">
+    UPDATE `notification_deliveries` SET `deliveryStatus`='SENDING',`attemptCount`=1,
+      `templateId`=#{templateId},`subscriptionGrantId`=#{subscriptionGrantId},`updatedAt`=#{updatedAt}
+    WHERE `_id`=#{id} AND `deliveryStatus`='PENDING'
+  </update>
+  <update id="skip">
+    UPDATE `notification_deliveries` SET `deliveryStatus`='SKIPPED',`lastErrorMessage`=#{message},`updatedAt`=#{updatedAt}
+    WHERE `_id`=#{id} AND `deliveryStatus`='PENDING'
+  </update>
+  <update id="finish" parameterType="com.tencent.wxcloudrun.model.NotificationDelivery">
+    UPDATE `notification_deliveries` SET `deliveryStatus`=#{deliveryStatus},`lastErrorCode`=#{lastErrorCode},
+      `lastErrorMessage`=#{lastErrorMessage},`sentAt`=#{sentAt},`updatedAt`=#{updatedAt}
+    WHERE `_id`=#{id} AND `deliveryStatus`='SENDING'
+  </update>
+  <select id="selectLatest" resultMap="deliveryMap">
+    SELECT <include refid="columns"/> FROM `notification_deliveries`
+    WHERE `recipientOpenid`=#{recipientOpenid} AND `channel`=#{channel}
+    ORDER BY `createdAt` DESC, `_id` DESC LIMIT #{limit}
+  </select>
+</mapper>

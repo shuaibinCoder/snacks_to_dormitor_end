@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tencent.wxcloudrun.dao.SystemCollectionSchemaMapper">
+  <resultMap id="schemaMap" type="com.tencent.wxcloudrun.model.SystemCollectionSchema">
+    <id property="id" column="_id"/><result property="collection" column="collection"/>
+    <result property="name" column="name"/><result property="description" column="description"/>
+    <result property="fields" column="fields" typeHandler="com.tencent.wxcloudrun.dao.DataListTypeHandler"/>
+    <result property="version" column="version"/><result property="createdAt" column="createdAt"/>
+    <result property="updatedAt" column="updatedAt"/>
+  </resultMap>
+  <sql id="columns">`_id`, `collection`, `name`, `description`, `fields`, `version`, `createdAt`, `updatedAt`</sql>
+  <select id="selectAll" resultMap="schemaMap">
+    SELECT <include refid="columns"/> FROM `system_collection_schemas` ORDER BY `_id`
+  </select>
+  <insert id="insertIgnore" parameterType="com.tencent.wxcloudrun.model.SystemCollectionSchema">
+    INSERT INTO `system_collection_schemas` (<include refid="columns"/>)
+    VALUES (#{id},#{collection},#{name},#{description},#{fields,typeHandler=com.tencent.wxcloudrun.dao.DataListTypeHandler},#{version},#{createdAt},#{updatedAt})
+    ON DUPLICATE KEY UPDATE `_id`=`_id`
+  </insert>
+  <update id="update" parameterType="com.tencent.wxcloudrun.model.SystemCollectionSchema">
+    UPDATE `system_collection_schemas` SET `collection`=#{collection},`name`=#{name},`description`=#{description},
+      `fields`=#{fields,typeHandler=com.tencent.wxcloudrun.dao.DataListTypeHandler},`version`=#{version},`updatedAt`=#{updatedAt}
+    WHERE `_id`=#{id}
+  </update>
+</mapper>

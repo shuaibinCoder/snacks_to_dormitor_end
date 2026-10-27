@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
  * index控制器
  */
 @Controller
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "snacks.examples-enabled", havingValue = "true")
 
 public class IndexController {
 

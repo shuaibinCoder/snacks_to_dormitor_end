@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tencent.wxcloudrun.dao.OrderMapper">
+  <resultMap id="orderMap" type="com.tencent.wxcloudrun.model.Order">
+    <id property="id" column="_id"/><result property="orderNo" column="orderNo"/>
+    <result property="buyerOpenid" column="buyerOpenid"/><result property="sellerOpenid" column="sellerOpenid"/>
+    <result property="storeId" column="storeId"/><result property="storeName" column="storeName"/>
+    <result property="storeLogoEmoji" column="storeLogoEmoji"/>
+    <result property="items" column="items" typeHandler="com.tencent.wxcloudrun.dao.DataListTypeHandler"/>
+    <result property="goodsAmount" column="goodsAmount"/><result property="deliveryFee" column="deliveryFee"/>
+    <result property="totalAmount" column="totalAmount"/><result property="contactName" column="contactName"/>
+    <result property="phone" column="phone"/><result property="location" column="location"/>
+    <result property="deliveryMethod" column="deliveryMethod"/><result property="note" column="note"/>
+    <result property="buyerNotificationGrantId" column="buyerNotificationGrantId"/>
+    <result property="buyerNotificationAuthorized" column="buyerNotificationAuthorized"/>
+    <result property="status" column="status"/>
+    <result property="statusHistory" column="statusHistory" typeHandler="com.tencent.wxcloudrun.dao.DataListTypeHandler"/>
+    <result property="requestId" column="requestId"/><result property="requestHash" column="requestHash"/>
+    <result property="createdAt" column="createdAt"/><result property="updatedAt" column="updatedAt"/>
+  </resultMap>
+  <sql id="columns">`_id`, `orderNo`, `buyerOpenid`, `sellerOpenid`, `storeId`, `storeName`, `storeLogoEmoji`, `items`, `goodsAmount`, `deliveryFee`, `totalAmount`, `contactName`, `phone`, `location`, `deliveryMethod`, `note`, `buyerNotificationGrantId`, `buyerNotificationAuthorized`, `status`, `statusHistory`, `requestId`, `requestHash`, `createdAt`, `updatedAt`</sql>
+  <select id="selectById" resultMap="orderMap">
+    SELECT <include refid="columns"/> FROM `orders` WHERE `_id`=#{id}<if test="lock"> FOR UPDATE</if>
+  </select>
+  <select id="selectByRequest" resultMap="orderMap">
+    SELECT <include refid="columns"/> FROM `orders` WHERE `buyerOpenid`=#{buyerOpenid} AND `requestId`=#{requestId} LIMIT 1
+    <if test="lock">FOR UPDATE</if>
+  </select>
+  <insert id="insert" parameterType="com.tencent.wxcloudrun.model.Order">
+    INSERT INTO `orders` (<include refid="columns"/>) VALUES
+    (#{id},#{orderNo},#{buyerOpenid},#{sellerOpenid},#{storeId},#{storeName},#{storeLogoEmoji},
+     #{items,typeHandler=com.tencent.wxcloudrun.dao.DataListTypeHandler},#{goodsAmount},#{deliveryFee},#{totalAmount},
+     #{contactName},#{phone},#{location},#{deliveryMethod},#{note},#{buyerNotificationGrantId},#{buyerNotificationAuthorized},
+     #{status},#{statusHistory,typeHandler=com.tencent.wxcloudrun.dao.DataListTypeHandler},#{requestId},#{requestHash},#{createdAt},#{updatedAt})
+  </insert>
+  <update id="completeCreation" parameterType="com.tencent.wxcloudrun.model.Order">
+    UPDATE `orders` SET `sellerOpenid`=#{sellerOpenid},`storeId`=#{storeId},`storeName`=#{storeName},
+      `storeLogoEmoji`=#{storeLogoEmoji},`items`=#{items,typeHandler=com.tencent.wxcloudrun.dao.DataListTypeHandler},
+      `goodsAmount`=#{goodsAmount},`deliveryFee`=#{deliveryFee},`totalAmount`=#{totalAmount},`contactName`=#{contactName},
+      `phone`=#{phone},`location`=#{location},`deliveryMethod`=#{deliveryMethod},`note`=#{note},
+      `buyerNotificationGrantId`=#{buyerNotificationGrantId},`buyerNotificationAuthorized`=#{buyerNotificationAuthorized},
+      `statusHistory`=#{statusHistory,typeHandler=com.tencent.wxcloudrun.dao.DataListTypeHandler},`updatedAt`=#{updatedAt}
+    WHERE `_id`=#{id} AND `buyerOpenid`=#{buyerOpenid} AND `requestId`=#{requestId} AND `requestHash`=#{requestHash} AND `status`='CREATED'
+  </update>
+  <select id="selectByOwner" resultMap="orderMap">
+    SELECT <include refid="columns"/> FROM `orders`
+    <choose><when test="sellerOpenid != null">WHERE `sellerOpenid`=#{sellerOpenid}</when><otherwise>WHERE `buyerOpenid`=#{buyerOpenid}</otherwise></choose>
+    ORDER BY `createdAt` DESC, `_id` DESC LIMIT #{limit}
+  </select>
+  <select id="countByStoreAndStatus" resultType="long">
+    SELECT COUNT(*) FROM `orders` WHERE `storeId`=#{storeId} AND `status`=#{status}
+  </select>
+  <select id="countByStoreSince" resultType="long">
+    SELECT COUNT(*) FROM `orders` WHERE `storeId`=#{storeId} AND `createdAt` &gt;= #{createdAt}
+  </select>
+  <select id="sumCompletedSince" resultType="long">
+    SELECT COALESCE(SUM(`totalAmount`),0) FROM `orders`
+    WHERE `storeId`=#{storeId} AND `createdAt` &gt;= #{createdAt} AND `status`='COMPLETED'
+  </select>
+  <update id="transitionStatus">
+    UPDATE `orders` SET `status`=#{order.status},
+      `statusHistory`=#{order.statusHistory,typeHandler=com.tencent.wxcloudrun.dao.DataListTypeHandler}, `updatedAt`=#{order.updatedAt}
+    WHERE `_id`=#{id} AND `status`=#{expectedStatus}
+  </update>
+</mapper>

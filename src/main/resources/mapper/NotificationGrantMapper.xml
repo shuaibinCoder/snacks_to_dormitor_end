@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tencent.wxcloudrun.dao.NotificationGrantMapper">
+  <resultMap id="grantMap" type="com.tencent.wxcloudrun.model.NotificationGrant">
+    <id property="id" column="_id"/><result property="openid" column="openid"/>
+    <result property="templateKey" column="templateKey"/><result property="subscriptionRole" column="subscriptionRole"/>
+    <result property="scene" column="scene"/><result property="status" column="status"/>
+    <result property="boundBizType" column="boundBizType"/><result property="boundBizId" column="boundBizId"/>
+    <result property="consumedAt" column="consumedAt"/><result property="createdAt" column="createdAt"/>
+    <result property="updatedAt" column="updatedAt"/>
+  </resultMap>
+  <sql id="columns">`_id`, `openid`, `templateKey`, `subscriptionRole`, `scene`, `status`, `boundBizType`, `boundBizId`, `consumedAt`, `createdAt`, `updatedAt`</sql>
+  <insert id="insert" parameterType="com.tencent.wxcloudrun.model.NotificationGrant">
+    INSERT INTO `notification_grants` (<include refid="columns"/>)
+    VALUES (#{id},#{openid},#{templateKey},#{subscriptionRole},#{scene},#{status},#{boundBizType},#{boundBizId},#{consumedAt},#{createdAt},#{updatedAt})
+  </insert>
+  <select id="selectById" resultMap="grantMap">
+    SELECT <include refid="columns"/> FROM `notification_grants` WHERE `_id`=#{id}<if test="lock"> FOR UPDATE</if>
+  </select>
+  <select id="selectAvailableForTest" resultMap="grantMap">
+    SELECT <include refid="columns"/> FROM `notification_grants`
+    WHERE `openid`=#{openid} AND `subscriptionRole`=#{subscriptionRole} AND `templateKey`=#{templateKey}
+      AND `status`='AVAILABLE' AND `boundBizId`='' AND `scene`&lt;&gt;'ORDER_SUBMIT'
+    ORDER BY `createdAt`, `_id` LIMIT 1 FOR UPDATE
+  </select>
+  <update id="bindOrder">
+    UPDATE `notification_grants` SET `boundBizType`='ORDER',`boundBizId`=#{orderId},`updatedAt`=#{updatedAt}
+    WHERE `_id`=#{id} AND `openid`=#{openid} AND `templateKey`=#{templateKey}
+      AND `subscriptionRole`='BUYER' AND `scene`='ORDER_SUBMIT' AND `status`='AVAILABLE' AND `boundBizId`=''
+  </update>
+  <update id="claim">
+    UPDATE `notification_grants` SET `status`='SENDING',`updatedAt`=#{grant.updatedAt}
+    WHERE `_id`=#{grant.id} AND `openid`=#{grant.openid} AND `templateKey`=#{grant.templateKey}
+      AND `subscriptionRole`=#{grant.subscriptionRole} AND `status`='AVAILABLE'
+    <choose>
+      <when test="specific">AND `scene`='ORDER_SUBMIT' AND `boundBizType`='ORDER' AND `boundBizId`=#{orderId}</when>
+      <otherwise>AND `scene`&lt;&gt;'ORDER_SUBMIT' AND `boundBizId`=''</otherwise>
+    </choose>
+  </update>
+  <update id="finish">
+    UPDATE `notification_grants` SET `status`=#{status},`consumedAt`=#{consumedAt},`updatedAt`=#{updatedAt}
+    WHERE `_id`=#{id} AND `status`='SENDING'
+  </update>
+</mapper>

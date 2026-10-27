@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tencent.wxcloudrun.dao.NotificationTemplateMapper">
+  <resultMap id="templateMap" type="com.tencent.wxcloudrun.model.NotificationTemplate">
+    <id property="id" column="_id"/><result property="key" column="key"/>
+    <result property="keyLabel" column="keyLabel"/><result property="description" column="description"/>
+    <result property="policyVersion" column="policyVersion"/><result property="policyVersionLabel" column="policyVersionLabel"/>
+    <result property="templateId" column="templateId"/><result property="enabled" column="enabled"/>
+    <result property="miniprogramState" column="miniprogramState"/><result property="buyerOrderPushStage" column="buyerOrderPushStage"/>
+    <result property="fields" column="fields" typeHandler="com.tencent.wxcloudrun.dao.DataTypeHandler"/>
+    <result property="createdAt" column="createdAt"/><result property="updatedAt" column="updatedAt"/>
+  </resultMap>
+  <sql id="columns">`_id`, `key`, `keyLabel`, `description`, `policyVersion`, `policyVersionLabel`, `templateId`, `enabled`, `miniprogramState`, `buyerOrderPushStage`, `fields`, `createdAt`, `updatedAt`</sql>
+  <select id="selectByKey" resultMap="templateMap">
+    SELECT <include refid="columns"/> FROM `notification_templates` WHERE `key`=#{key} LIMIT 1
+  </select>
+  <insert id="insertIgnore" parameterType="com.tencent.wxcloudrun.model.NotificationTemplate">
+    INSERT INTO `notification_templates` (<include refid="columns"/>)
+    VALUES (#{id},#{key},#{keyLabel},#{description},#{policyVersion},#{policyVersionLabel},#{templateId},#{enabled},#{miniprogramState},#{buyerOrderPushStage},#{fields,typeHandler=com.tencent.wxcloudrun.dao.DataTypeHandler},#{createdAt},#{updatedAt})
+    ON DUPLICATE KEY UPDATE `_id`=`_id`
+  </insert>
+  <update id="updateConfig" parameterType="com.tencent.wxcloudrun.model.NotificationTemplate">
+    UPDATE `notification_templates` SET `templateId`=#{templateId},`enabled`=#{enabled},`miniprogramState`=#{miniprogramState},
+      `buyerOrderPushStage`=#{buyerOrderPushStage},`fields`=#{fields,typeHandler=com.tencent.wxcloudrun.dao.DataTypeHandler},`updatedAt`=#{updatedAt}
+    WHERE `key`=#{key}
+  </update>
+</mapper>

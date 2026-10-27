@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tencent.wxcloudrun.dao.NotificationMapper">
+  <resultMap id="notificationMap" type="com.tencent.wxcloudrun.model.Notification">
+    <id property="id" column="_id"/><result property="recipientOpenid" column="recipientOpenid"/>
+    <result property="recipientRole" column="recipientRole"/><result property="subscriptionRole" column="subscriptionRole"/>
+    <result property="category" column="category"/><result property="type" column="type"/>
+    <result property="priority" column="priority"/><result property="title" column="title"/>
+    <result property="summary" column="summary"/><result property="statusText" column="statusText"/>
+    <result property="bizType" column="bizType"/><result property="bizId" column="bizId"/>
+    <result property="pagePath" column="pagePath"/><result property="subscriptionGrantId" column="subscriptionGrantId"/>
+    <result property="requireSpecificGrant" column="requireSpecificGrant"/><result property="readStatus" column="readStatus"/>
+    <result property="readAt" column="readAt"/><result property="hidden" column="hidden"/>
+    <result property="dedupeKey" column="dedupeKey"/><result property="expireAt" column="expireAt"/>
+    <result property="createdAt" column="createdAt"/><result property="updatedAt" column="updatedAt"/>
+  </resultMap>
+  <sql id="columns">`_id`, `recipientOpenid`, `recipientRole`, `subscriptionRole`, `category`, `type`, `priority`, `title`, `summary`, `statusText`, `bizType`, `bizId`, `pagePath`, `subscriptionGrantId`, `requireSpecificGrant`, `readStatus`, `readAt`, `hidden`, `dedupeKey`, `expireAt`, `createdAt`, `updatedAt`</sql>
+  <select id="selectById" resultMap="notificationMap">
+    SELECT <include refid="columns"/> FROM `notifications` WHERE `_id`=#{id}<if test="lock"> FOR UPDATE</if>
+  </select>
+  <select id="selectByDedupe" resultMap="notificationMap">
+    SELECT <include refid="columns"/> FROM `notifications` WHERE `recipientOpenid`=#{recipientOpenid} AND `dedupeKey`=#{dedupeKey} LIMIT 1
+  </select>
+  <insert id="insertIgnore" parameterType="com.tencent.wxcloudrun.model.Notification">
+    INSERT INTO `notifications` (<include refid="columns"/>) VALUES
+    (#{id},#{recipientOpenid},#{recipientRole},#{subscriptionRole},#{category},#{type},#{priority},#{title},#{summary},#{statusText},#{bizType},#{bizId},#{pagePath},#{subscriptionGrantId},#{requireSpecificGrant},#{readStatus},#{readAt},#{hidden},#{dedupeKey},#{expireAt},#{createdAt},#{updatedAt})
+    ON DUPLICATE KEY UPDATE `_id`=`_id`
+  </insert>
+  <select id="selectList" resultMap="notificationMap">
+    SELECT <include refid="columns"/> FROM `notifications`
+    WHERE `recipientOpenid`=#{recipientOpenid} AND `hidden`=0
+    <if test="category != null and category != '' and category != 'ALL'">AND `category`=#{category}</if>
+    <if test="unreadOnly">AND `readStatus`='UNREAD'</if>
+    ORDER BY `createdAt` DESC, `_id` DESC LIMIT #{limit}
+  </select>
+  <select id="countUnread" resultType="long">
+    SELECT COUNT(*) FROM `notifications` WHERE `recipientOpenid`=#{recipientOpenid} AND `hidden`=0 AND `readStatus`='UNREAD' AND `category`=#{category}
+  </select>
+  <update id="markRead">
+    UPDATE `notifications` SET `readStatus`='READ',`readAt`=#{readAt},`updatedAt`=#{updatedAt}
+    WHERE `_id`=#{id} AND `recipientOpenid`=#{recipientOpenid} AND `readStatus`='UNREAD'
+  </update>
+  <update id="markAllRead">
+    UPDATE `notifications` SET `readStatus`='READ',`readAt`=#{readAt},`updatedAt`=#{updatedAt}
+    WHERE `recipientOpenid`=#{recipientOpenid} AND `readStatus`='UNREAD'
+  </update>
+</mapper>

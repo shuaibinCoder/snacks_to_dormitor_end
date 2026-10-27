@@ -20,6 +20,7 @@ import java.util.List;
  * counter控制器
  */
 @RestController
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "snacks.examples-enabled", havingValue = "true")
 
 public class CounterController {
 
@@ -79,5 +80,5 @@ public class CounterController {
       return ApiResponse.error("参数action错误");
     }
   }
-  
+
 }

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tencent.wxcloudrun.dao.StoreMapper">
+  <resultMap id="storeMap" type="com.tencent.wxcloudrun.model.Store">
+    <id property="id" column="_id"/>
+    <result property="ownerOpenid" column="ownerOpenid"/><result property="applicationId" column="applicationId"/>
+    <result property="name" column="name"/><result property="logoEmoji" column="logoEmoji"/>
+    <result property="notice" column="notice"/><result property="ownerName" column="ownerName"/>
+    <result property="phone" column="phone"/><result property="businessHours" column="businessHours"/>
+    <result property="deliveryMinutes" column="deliveryMinutes"/><result property="minimumOrder" column="minimumOrder"/>
+    <result property="deliveryFee" column="deliveryFee"/><result property="rating" column="rating"/>
+    <result property="monthlySales" column="monthlySales"/><result property="approvalStatus" column="approvalStatus"/>
+    <result property="platformStatus" column="platformStatus"/><result property="businessStatus" column="businessStatus"/>
+    <result property="approvedAt" column="approvedAt"/><result property="approvedBy" column="approvedBy"/>
+    <result property="createdAt" column="createdAt"/><result property="updatedAt" column="updatedAt"/>
+  </resultMap>
+  <sql id="columns">`_id`, `ownerOpenid`, `applicationId`, `name`, `logoEmoji`, `notice`, `ownerName`, `phone`, `businessHours`, `deliveryMinutes`, `minimumOrder`, `deliveryFee`, `rating`, `monthlySales`, `approvalStatus`, `platformStatus`, `businessStatus`, `approvedAt`, `approvedBy`, `createdAt`, `updatedAt`</sql>
+  <sql id="insertValues">#{id}, #{ownerOpenid}, #{applicationId}, #{name}, #{logoEmoji}, #{notice}, #{ownerName}, #{phone}, #{businessHours}, #{deliveryMinutes}, #{minimumOrder}, #{deliveryFee}, #{rating}, #{monthlySales}, #{approvalStatus}, #{platformStatus}, #{businessStatus}, #{approvedAt}, #{approvedBy}, #{createdAt}, #{updatedAt}</sql>
+  <select id="selectById" resultMap="storeMap">
+    SELECT <include refid="columns"/> FROM `stores` WHERE `_id` = #{id}<if test="lock"> FOR UPDATE</if>
+  </select>
+  <select id="selectByOwner" resultMap="storeMap">
+    SELECT <include refid="columns"/> FROM `stores` WHERE `ownerOpenid` = #{ownerOpenid} LIMIT 1<if test="lock"> FOR UPDATE</if>
+  </select>
+  <select id="selectPublic" resultMap="storeMap">
+    SELECT <include refid="columns"/> FROM `stores`
+    WHERE `approvalStatus` = 'APPROVED' AND `platformStatus` = 'ACTIVE'
+    <if test="query != null and query != ''">AND `name` LIKE CONCAT('%', #{query}, '%') ESCAPE '!'</if>
+    ORDER BY `monthlySales` DESC, `_id` DESC LIMIT #{limit}
+  </select>
+  <select id="selectAll" resultMap="storeMap">
+    SELECT <include refid="columns"/> FROM `stores` ORDER BY `updatedAt` DESC, `_id` DESC LIMIT #{limit}
+  </select>
+  <insert id="insert" parameterType="com.tencent.wxcloudrun.model.Store">
+    INSERT INTO `stores` (<include refid="columns"/>) VALUES (<include refid="insertValues"/>)
+  </insert>
+  <update id="updateApproval" parameterType="com.tencent.wxcloudrun.model.Store">
+    UPDATE `stores` SET `applicationId`=#{applicationId}, `name`=#{name}, `notice`=#{notice}, `ownerName`=#{ownerName},
+      `phone`=#{phone}, `businessHours`=#{businessHours}, `deliveryMinutes`=#{deliveryMinutes},
+      `minimumOrder`=#{minimumOrder}, `deliveryFee`=#{deliveryFee}, `approvalStatus`=#{approvalStatus},
+      `platformStatus`=#{platformStatus}, `businessStatus`=#{businessStatus}, `approvedAt`=#{approvedAt},
+      `approvedBy`=#{approvedBy}, `updatedAt`=#{updatedAt} WHERE `_id`=#{id} AND `ownerOpenid`=#{ownerOpenid}
+  </update>
+  <update id="updateProfile" parameterType="com.tencent.wxcloudrun.model.Store">
+    UPDATE `stores` SET `name`=#{name}, `notice`=#{notice}, `ownerName`=#{ownerName}, `phone`=#{phone},
+      `businessHours`=#{businessHours}, `deliveryMinutes`=#{deliveryMinutes}, `minimumOrder`=#{minimumOrder},
+      `deliveryFee`=#{deliveryFee}, `updatedAt`=#{updatedAt} WHERE `_id`=#{id} AND `ownerOpenid`=#{ownerOpenid}
+  </update>
+  <update id="updateBusinessStatus">
+    UPDATE `stores` SET `businessStatus`=#{status}, `updatedAt`=#{updatedAt} WHERE `_id`=#{id}
+  </update>
+  <update id="updatePlatformStatus">
+    UPDATE `stores` SET `platformStatus`=#{status}, `updatedAt`=#{updatedAt} WHERE `_id`=#{id}
+  </update>
+  <update id="incrementMonthlySales">
+    UPDATE `stores` SET `monthlySales`=`monthlySales`+1, `updatedAt`=#{updatedAt} WHERE `_id`=#{id}
+  </update>
+  <select id="countActive" resultType="long">
+    SELECT COUNT(*) FROM `stores` WHERE `approvalStatus`='APPROVED' AND `platformStatus`='ACTIVE'
+  </select>
+</mapper>

@@ -1,0 +1,857 @@
+[
+  {
+    "_id": "USER_ROLE",
+    "type": "USER_ROLE",
+    "name": "用户角色",
+    "description": "决定普通微信用户可以使用哪些业务功能。一个用户可以同时拥有多个角色。",
+    "items": [
+      {
+        "code": "CUSTOMER",
+        "label": "普通用户",
+        "description": "可以搜索店铺、浏览商品、下单和查看自己的订单。"
+      },
+      {
+        "code": "MERCHANT_OWNER",
+        "label": "商家店主",
+        "description": "商家入驻审核通过后获得，可以管理自己的店铺、商品和订单。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "PLATFORM_ROLE",
+    "type": "PLATFORM_ROLE",
+    "name": "平台角色",
+    "description": "决定微信用户是否可以进入平台运营后台以及可以执行哪些管理操作。",
+    "items": [
+      {
+        "code": "PLATFORM_OPERATOR",
+        "label": "平台运营",
+        "description": "可以联系申请人、登记付款、查看店铺，但不能最终审核商家。"
+      },
+      {
+        "code": "PLATFORM_ADMIN",
+        "label": "平台管理员",
+        "description": "可以审核商家、暂停店铺、管理平台运营人员。"
+      },
+      {
+        "code": "SUPER_ADMIN",
+        "label": "超级管理员",
+        "description": "平台最高权限，通常由开发者持有，可以分配管理员权限。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "ACCOUNT_STATUS",
+    "type": "ACCOUNT_STATUS",
+    "name": "账号状态",
+    "description": "用户或平台人员账号是否可以正常使用。",
+    "items": [
+      {
+        "code": "ACTIVE",
+        "label": "正常",
+        "description": "账号可正常使用相应权限。"
+      },
+      {
+        "code": "DISABLED",
+        "label": "已停用",
+        "description": "账号权限已被停用。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "APPLICATION_STATUS",
+    "type": "APPLICATION_STATUS",
+    "name": "商家申请状态",
+    "description": "商家从提交申请到正式上线所处的审批阶段。",
+    "items": [
+      {
+        "code": "DRAFT",
+        "label": "草稿",
+        "description": "申请尚未正式提交。"
+      },
+      {
+        "code": "SUBMITTED",
+        "label": "待平台联系",
+        "description": "申请已提交，等待平台工作人员电话联系。"
+      },
+      {
+        "code": "CONTACT_FAILED",
+        "label": "联系未成功",
+        "description": "平台暂时没有联系到申请人。"
+      },
+      {
+        "code": "CONTACTED",
+        "label": "已完成联系",
+        "description": "平台已经完成电话沟通，等待确认入驻和付款信息。"
+      },
+      {
+        "code": "NEED_MORE_INFO",
+        "label": "待补充资料",
+        "description": "申请人需要修改或补充资料后重新提交。"
+      },
+      {
+        "code": "PAYMENT_PENDING",
+        "label": "待线下付款",
+        "description": "等待申请人按照平台说明完成线下付款。"
+      },
+      {
+        "code": "PAID",
+        "label": "已付款待审核",
+        "description": "平台已经确认收款，等待管理员最终审核。"
+      },
+      {
+        "code": "APPROVED",
+        "label": "审核通过",
+        "description": "商家已通过审核并获得店铺经营权限。"
+      },
+      {
+        "code": "REJECTED",
+        "label": "审核未通过",
+        "description": "商家申请被管理员拒绝。"
+      },
+      {
+        "code": "SUSPENDED",
+        "label": "申请已暂停",
+        "description": "已通过的商家申请或资格被暂停。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "STORE_APPROVAL_STATUS",
+    "type": "STORE_APPROVAL_STATUS",
+    "name": "店铺审批状态",
+    "description": "表示店铺是否通过平台入驻审批。",
+    "items": [
+      {
+        "code": "PENDING",
+        "label": "待审核",
+        "description": "店铺尚未通过平台审核，不能公开展示。"
+      },
+      {
+        "code": "APPROVED",
+        "label": "审核通过",
+        "description": "店铺已通过平台审核。"
+      },
+      {
+        "code": "REJECTED",
+        "label": "审核拒绝",
+        "description": "店铺未通过平台审核。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "STORE_PLATFORM_STATUS",
+    "type": "STORE_PLATFORM_STATUS",
+    "name": "店铺平台状态",
+    "description": "平台对店铺实施的运营治理状态。",
+    "items": [
+      {
+        "code": "ACTIVE",
+        "label": "平台正常",
+        "description": "店铺可以在平台展示和经营。"
+      },
+      {
+        "code": "SUSPENDED",
+        "label": "平台暂停",
+        "description": "店铺被平台临时暂停，不能展示或接单。"
+      },
+      {
+        "code": "BANNED",
+        "label": "平台封禁",
+        "description": "店铺因严重违规被平台封禁。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "STORE_BUSINESS_STATUS",
+    "type": "STORE_BUSINESS_STATUS",
+    "name": "店铺营业状态",
+    "description": "由商家控制的当前营业状态。",
+    "items": [
+      {
+        "code": "OPEN",
+        "label": "营业中",
+        "description": "店铺当前可以接受订单。"
+      },
+      {
+        "code": "CLOSED",
+        "label": "已打烊",
+        "description": "店铺当前不接受新订单。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "PRODUCT_STATUS",
+    "type": "PRODUCT_STATUS",
+    "name": "商品状态",
+    "description": "商品是否在学生端公开展示和允许下单。",
+    "items": [
+      {
+        "code": "ON",
+        "label": "已上架",
+        "description": "商品可以在店铺中展示并下单。"
+      },
+      {
+        "code": "OFF",
+        "label": "已下架",
+        "description": "商品不会在学生端展示。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "ORDER_STATUS",
+    "type": "ORDER_STATUS",
+    "name": "订单履约状态",
+    "description": "订单从提交到完成所处的履约阶段。",
+    "items": [
+      {
+        "code": "CREATED",
+        "label": "待商家接单",
+        "description": "用户已提交订单，等待商家确认。"
+      },
+      {
+        "code": "ACCEPTED",
+        "label": "备货中",
+        "description": "商家已接单并开始备货。"
+      },
+      {
+        "code": "READY",
+        "label": "待自取",
+        "description": "自取订单已经准备完成。"
+      },
+      {
+        "code": "DELIVERING",
+        "label": "配送中",
+        "description": "商家正在配送商品。"
+      },
+      {
+        "code": "DELIVERED",
+        "label": "待确认收货",
+        "description": "商家已交付，等待用户确认。"
+      },
+      {
+        "code": "COMPLETED",
+        "label": "已完成",
+        "description": "商品已交付并完成线下付款确认。"
+      },
+      {
+        "code": "CANCELED",
+        "label": "用户已取消",
+        "description": "订单被购买者取消，库存已恢复。"
+      },
+      {
+        "code": "REJECTED",
+        "label": "商家已拒单",
+        "description": "商家拒绝订单，库存已恢复。"
+      },
+      {
+        "code": "TIMEOUT_CLOSED",
+        "label": "超时关闭",
+        "description": "商家未及时接单，系统关闭订单。"
+      },
+      {
+        "code": "DISPUTED",
+        "label": "争议处理中",
+        "description": "订单存在投诉或付款争议。"
+      },
+      {
+        "code": "CLOSED",
+        "label": "异常关闭",
+        "description": "订单由平台结束处理。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "CONTACT_RESULT",
+    "type": "CONTACT_RESULT",
+    "name": "电话联系结果",
+    "description": "平台运营人员联系商家申请人的结果。",
+    "items": [
+      {
+        "code": "CONTACTED",
+        "label": "联系成功",
+        "description": "已经通过电话或其他约定方式联系到申请人。"
+      },
+      {
+        "code": "CONTACT_FAILED",
+        "label": "联系未成功",
+        "description": "本次没有成功联系到申请人。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "PAYMENT_STATUS",
+    "type": "PAYMENT_STATUS",
+    "name": "付款记录状态",
+    "description": "商家入驻线下付款记录的确认状态。",
+    "items": [
+      {
+        "code": "PENDING",
+        "label": "待确认",
+        "description": "付款记录等待平台核实。"
+      },
+      {
+        "code": "CONFIRMED",
+        "label": "已确认",
+        "description": "平台已经确认收到线下付款。"
+      },
+      {
+        "code": "REJECTED",
+        "label": "确认失败",
+        "description": "付款记录未通过平台核实。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "PAYMENT_METHOD",
+    "type": "PAYMENT_METHOD",
+    "name": "付款方式",
+    "description": "商家向平台支付入驻费用的线下方式。",
+    "items": [
+      {
+        "code": "WECHAT_OFFLINE",
+        "label": "微信线下转账",
+        "description": "双方通过微信私下完成转账，平台仅登记结果。"
+      },
+      {
+        "code": "ALIPAY_OFFLINE",
+        "label": "支付宝线下转账",
+        "description": "双方通过支付宝私下完成转账。"
+      },
+      {
+        "code": "CASH",
+        "label": "现金",
+        "description": "双方通过现金完成付款。"
+      },
+      {
+        "code": "OTHER",
+        "label": "其他方式",
+        "description": "由平台备注说明的其他线下付款方式。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "NOTIFICATION_CATEGORY",
+    "type": "NOTIFICATION_CATEGORY",
+    "name": "消息分类",
+    "description": "站内消息所属的业务分类。",
+    "items": [
+      {
+        "code": "ORDER",
+        "label": "订单消息",
+        "description": "下单、接单、配送和取消等订单消息。"
+      },
+      {
+        "code": "MERCHANT_APPLICATION",
+        "label": "商家入驻消息",
+        "description": "入驻申请、付款和审核进度消息。"
+      },
+      {
+        "code": "STORE",
+        "label": "店铺经营消息",
+        "description": "店铺暂停、恢复和经营状态消息。"
+      },
+      {
+        "code": "PLATFORM",
+        "label": "平台审批消息",
+        "description": "平台运营和管理员需要处理的消息。"
+      },
+      {
+        "code": "SYSTEM",
+        "label": "系统通知",
+        "description": "平台系统级通知。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "NOTIFICATION_TYPE",
+    "type": "NOTIFICATION_TYPE",
+    "name": "消息类型",
+    "description": "触发站内消息和微信订阅消息的具体业务事件。",
+    "items": [
+      {
+        "code": "NEW_ORDER",
+        "label": "新订单提醒",
+        "description": "购买者提交订单后通知商家。"
+      },
+      {
+        "code": "ORDER_ACCEPTED",
+        "label": "商家已接单",
+        "description": "商家接受订单后通知购买者。"
+      },
+      {
+        "code": "ORDER_REJECTED",
+        "label": "商家拒绝订单",
+        "description": "商家拒单后通知购买者。"
+      },
+      {
+        "code": "ORDER_DELIVERING",
+        "label": "商品开始配送",
+        "description": "订单进入配送状态后通知购买者。"
+      },
+      {
+        "code": "ORDER_DELIVERED",
+        "label": "商品已经送达",
+        "description": "商家标记送达后通知购买者。"
+      },
+      {
+        "code": "BUYER_CANCELED_ORDER",
+        "label": "用户取消订单",
+        "description": "购买者取消订单后通知商家。"
+      },
+      {
+        "code": "APPLICATION_SUBMITTED",
+        "label": "入驻申请已提交",
+        "description": "通知申请人入驻申请已经提交。"
+      },
+      {
+        "code": "NEW_MERCHANT_APPLICATION",
+        "label": "新商家申请",
+        "description": "通知平台人员出现新的入驻申请。"
+      },
+      {
+        "code": "APPLICATION_RESUBMITTED",
+        "label": "商家重新提交资料",
+        "description": "通知平台人员申请人已经补充资料。"
+      },
+      {
+        "code": "APPLICATION_CONTACTED",
+        "label": "平台已完成联系",
+        "description": "通知申请人平台已电话联系。"
+      },
+      {
+        "code": "APPLICATION_CONTACT_FAILED",
+        "label": "平台暂未联系成功",
+        "description": "通知申请人检查联系电话。"
+      },
+      {
+        "code": "APPLICATION_NEED_MORE_INFO",
+        "label": "需要补充资料",
+        "description": "通知申请人补充入驻资料。"
+      },
+      {
+        "code": "APPLICATION_PAYMENT_PENDING",
+        "label": "待完成线下付款",
+        "description": "通知申请人查看付款金额和说明。"
+      },
+      {
+        "code": "APPLICATION_PAYMENT_CONFIRMED",
+        "label": "平台已确认收款",
+        "description": "通知申请人等待最终审核。"
+      },
+      {
+        "code": "APPLICATION_PAID_PENDING_APPROVAL",
+        "label": "已付款待最终审核",
+        "description": "通知管理员处理已付款申请。"
+      },
+      {
+        "code": "APPLICATION_APPROVED",
+        "label": "入驻审核通过",
+        "description": "通知申请人店铺已经上线。"
+      },
+      {
+        "code": "APPLICATION_REJECTED",
+        "label": "入驻审核未通过",
+        "description": "通知申请人审核拒绝原因。"
+      },
+      {
+        "code": "STORE_SUSPENDED",
+        "label": "店铺被平台暂停",
+        "description": "通知商家店铺已暂停。"
+      },
+      {
+        "code": "STORE_RESUMED",
+        "label": "店铺恢复上线",
+        "description": "通知商家店铺已恢复。"
+      },
+      {
+        "code": "TEST_NOTIFICATION",
+        "label": "微信提醒测试",
+        "description": "用于验证统一订阅消息模板和授权是否可正常发送。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "BUYER_ORDER_PUSH_STAGE",
+    "type": "BUYER_ORDER_PUSH_STAGE",
+    "name": "购买者微信推送节点",
+    "description": "每笔订单的一次微信授权选择在哪一个订单节点消耗。",
+    "items": [
+      {
+        "code": "ACCEPTED",
+        "label": "商家接单时通知",
+        "description": "商家接单后立即向购买者发送唯一一次微信通知。"
+      },
+      {
+        "code": "DELIVERED",
+        "label": "商品送达时通知",
+        "description": "商品送达后向购买者发送唯一一次微信通知，当前默认。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "NOTIFICATION_PRIORITY",
+    "type": "NOTIFICATION_PRIORITY",
+    "name": "消息优先级",
+    "description": "消息处理的紧急程度。",
+    "items": [
+      {
+        "code": "URGENT",
+        "label": "紧急",
+        "description": "需要立即处理，例如新订单或店铺暂停。"
+      },
+      {
+        "code": "HIGH",
+        "label": "高优先级",
+        "description": "用户明显关心或需要采取行动。"
+      },
+      {
+        "code": "NORMAL",
+        "label": "普通",
+        "description": "普通进度或结果通知。"
+      },
+      {
+        "code": "LOW",
+        "label": "低优先级",
+        "description": "可延迟处理的提示。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "NOTIFICATION_BIZ_TYPE",
+    "type": "NOTIFICATION_BIZ_TYPE",
+    "name": "消息业务对象",
+    "description": "消息点击后关联的业务数据类型。",
+    "items": [
+      {
+        "code": "ORDER",
+        "label": "订单",
+        "description": "关联订单详情。"
+      },
+      {
+        "code": "MERCHANT_APPLICATION",
+        "label": "商家入驻申请",
+        "description": "关联入驻申请或审批详情。"
+      },
+      {
+        "code": "STORE",
+        "label": "店铺",
+        "description": "关联店铺或商家工作台。"
+      },
+      {
+        "code": "SYSTEM",
+        "label": "系统",
+        "description": "不关联具体业务记录。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "NOTIFICATION_READ_STATUS",
+    "type": "NOTIFICATION_READ_STATUS",
+    "name": "消息已读状态",
+    "description": "站内消息是否已被接收人查看。",
+    "items": [
+      {
+        "code": "UNREAD",
+        "label": "未读",
+        "description": "消息尚未被打开。"
+      },
+      {
+        "code": "READ",
+        "label": "已读",
+        "description": "消息已经被打开。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "NOTIFICATION_CHANNEL",
+    "type": "NOTIFICATION_CHANNEL",
+    "name": "消息发送通道",
+    "description": "消息通过哪种方式触达用户。",
+    "items": [
+      {
+        "code": "IN_APP",
+        "label": "小程序站内消息",
+        "description": "保存在小程序消息中心。"
+      },
+      {
+        "code": "WECHAT_SUBSCRIBE",
+        "label": "微信订阅消息",
+        "description": "用户离开小程序后通过微信服务通知触达。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "NOTIFICATION_DELIVERY_STATUS",
+    "type": "NOTIFICATION_DELIVERY_STATUS",
+    "name": "消息发送状态",
+    "description": "消息通道发送结果。",
+    "items": [
+      {
+        "code": "PENDING",
+        "label": "待发送",
+        "description": "等待调用发送通道。"
+      },
+      {
+        "code": "SUCCESS",
+        "label": "发送成功",
+        "description": "消息通道返回成功。"
+      },
+      {
+        "code": "FAILED_FINAL",
+        "label": "发送失败",
+        "description": "模板、授权或接口错误导致最终失败。"
+      },
+      {
+        "code": "SKIPPED",
+        "label": "已跳过",
+        "description": "模板未配置或用户没有可用授权次数。"
+      },
+      {
+        "code": "SENDING",
+        "label": "发送中",
+        "description": "已原子领取授权，等待外部发送结果；不自动重新领取。"
+      },
+      {
+        "code": "UNKNOWN",
+        "label": "结果未知",
+        "description": "外部发送结果不确定，保留诊断且不自动重发。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "NOTIFICATION_SUBSCRIPTION_ROLE",
+    "type": "NOTIFICATION_SUBSCRIPTION_ROLE",
+    "name": "订阅提醒身份",
+    "description": "同一个微信用户可能同时是购买者、商家和管理员，授权次数按业务身份分开使用。",
+    "items": [
+      {
+        "code": "BUYER",
+        "label": "购买者提醒",
+        "description": "用于接收接单、配送和送达等订单进度。"
+      },
+      {
+        "code": "MERCHANT",
+        "label": "商家提醒",
+        "description": "用于接收新订单和用户取消订单。"
+      },
+      {
+        "code": "APPLICANT",
+        "label": "商家申请人提醒",
+        "description": "用于接收入驻联系、付款和审核进度。"
+      },
+      {
+        "code": "PLATFORM",
+        "label": "平台审批提醒",
+        "description": "用于接收新申请和已付款待审核消息。"
+      },
+      {
+        "code": "GENERAL",
+        "label": "通用提醒",
+        "description": "消息中心手动开启的通用备用授权。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "SUBSCRIBE_PERMISSION",
+    "type": "SUBSCRIBE_PERMISSION",
+    "name": "订阅消息授权状态",
+    "description": "用户对统一微信订阅消息模板的授权结果。",
+    "items": [
+      {
+        "code": "ACCEPT",
+        "label": "已同意",
+        "description": "用户同意接收一次模板消息。"
+      },
+      {
+        "code": "REJECT",
+        "label": "已拒绝",
+        "description": "用户拒绝本次订阅请求。"
+      },
+      {
+        "code": "BAN",
+        "label": "永久拒绝",
+        "description": "用户选择不再询问或被微信限制。"
+      },
+      {
+        "code": "FILTER",
+        "label": "模板被过滤",
+        "description": "微信判断模板不可用或同名模板被过滤。"
+      },
+      {
+        "code": "UNKNOWN",
+        "label": "未知",
+        "description": "尚未请求授权或无法判断。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "AUDIT_ACTION",
+    "type": "AUDIT_ACTION",
+    "name": "平台操作类型",
+    "description": "平台人员在运营后台执行的重要操作。",
+    "items": [
+      {
+        "code": "MARK_APPLICATION_CONTACTED",
+        "label": "标记申请已联系",
+        "description": "平台人员确认已经电话联系申请人。"
+      },
+      {
+        "code": "MARK_APPLICATION_CONTACT_FAILED",
+        "label": "标记联系未成功",
+        "description": "平台人员没有成功联系申请人。"
+      },
+      {
+        "code": "REQUEST_MORE_INFORMATION",
+        "label": "要求补充资料",
+        "description": "平台要求申请人补充或修改入驻资料。"
+      },
+      {
+        "code": "SET_PAYMENT_PENDING",
+        "label": "设置待线下付款",
+        "description": "平台设置入驻费用和付款说明。"
+      },
+      {
+        "code": "CONFIRM_OFFLINE_PAYMENT",
+        "label": "确认线下收款",
+        "description": "平台确认已经收到申请人的线下付款。"
+      },
+      {
+        "code": "APPROVE_MERCHANT_APPLICATION",
+        "label": "审核通过商家申请",
+        "description": "管理员批准申请并上线店铺。"
+      },
+      {
+        "code": "REJECT_MERCHANT_APPLICATION",
+        "label": "拒绝商家申请",
+        "description": "管理员拒绝商家入驻申请。"
+      },
+      {
+        "code": "SUSPEND_STORE",
+        "label": "暂停店铺",
+        "description": "管理员暂停店铺展示和接单。"
+      },
+      {
+        "code": "RESUME_STORE",
+        "label": "恢复店铺",
+        "description": "管理员恢复店铺展示和接单资格。"
+      },
+      {
+        "code": "SAVE_PLATFORM_USER",
+        "label": "配置平台人员权限",
+        "description": "新增或修改平台运营、管理员角色。"
+      },
+      {
+        "code": "SYNC_CHINESE_DESCRIPTIONS",
+        "label": "同步数据库中文说明",
+        "description": "将枚举中文名称和说明同步到现有数据库记录。"
+      },
+      {
+        "code": "SAVE_NOTIFICATION_TEMPLATE",
+        "label": "配置订阅消息模板",
+        "description": "管理员配置统一微信订阅消息模板。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "AUDIT_TARGET_TYPE",
+    "type": "AUDIT_TARGET_TYPE",
+    "name": "平台操作对象类型",
+    "description": "审计日志中的操作目标属于哪一种业务数据。",
+    "items": [
+      {
+        "code": "MERCHANT_APPLICATION",
+        "label": "商家入驻申请",
+        "description": "操作对象是商家申请记录。"
+      },
+      {
+        "code": "STORE",
+        "label": "店铺",
+        "description": "操作对象是店铺记录。"
+      },
+      {
+        "code": "PRODUCT",
+        "label": "商品",
+        "description": "操作对象是商品记录。"
+      },
+      {
+        "code": "ORDER",
+        "label": "订单",
+        "description": "操作对象是订单记录。"
+      },
+      {
+        "code": "PLATFORM_USER",
+        "label": "平台人员",
+        "description": "操作对象是平台运营或管理员账号。"
+      },
+      {
+        "code": "SYSTEM_DICTIONARY",
+        "label": "系统数据字典",
+        "description": "操作对象是数据库字段和枚举中文说明。"
+      },
+      {
+        "code": "NOTIFICATION_TEMPLATE",
+        "label": "通知模板",
+        "description": "操作对象是站内或微信订阅消息模板。"
+      }
+    ],
+    "version": "2026-10-26-v4"
+  },
+  {
+    "_id": "GRANT_STATUS",
+    "type": "GRANT_STATUS",
+    "name": "订阅授权凭证状态",
+    "description": "云托管单次授权领取和消费状态。",
+    "version": "cloudrun-v1",
+    "items": [
+      {
+        "code": "AVAILABLE",
+        "label": "可用",
+        "description": "授权可领取；绑定后仅允许用于本单。"
+      },
+      {
+        "code": "SENDING",
+        "label": "发送中",
+        "description": "已原子领取授权，等待外部发送结果；不自动重新领取。"
+      },
+      {
+        "code": "CONSUMED",
+        "label": "已使用",
+        "description": "微信发送成功，授权已消费。"
+      },
+      {
+        "code": "FAILED",
+        "label": "发送失败",
+        "description": "微信明确拒绝本次发送，不自动重发。"
+      },
+      {
+        "code": "UNKNOWN",
+        "label": "结果未知",
+        "description": "外部发送结果不确定，保留诊断且不自动重发。"
+      }
+    ]
+  }
+]

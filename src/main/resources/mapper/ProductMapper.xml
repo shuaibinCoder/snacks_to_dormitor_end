@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tencent.wxcloudrun.dao.ProductMapper">
+  <resultMap id="productMap" type="com.tencent.wxcloudrun.model.Product">
+    <id property="id" column="_id"/><result property="storeId" column="storeId"/>
+    <result property="name" column="name"/><result property="category" column="category"/>
+    <result property="price" column="price"/><result property="stock" column="stock"/>
+    <result property="sold" column="sold"/><result property="emoji" column="emoji"/>
+    <result property="image" column="image"/><result property="status" column="status"/>
+    <result property="version" column="version"/><result property="createdAt" column="createdAt"/>
+    <result property="updatedAt" column="updatedAt"/>
+  </resultMap>
+  <sql id="columns">`_id`, `storeId`, `name`, `category`, `price`, `stock`, `sold`, `emoji`, `image`, `status`, `version`, `createdAt`, `updatedAt`</sql>
+  <select id="selectById" resultMap="productMap">
+    SELECT <include refid="columns"/> FROM `products` WHERE `_id`=#{id}<if test="lock"> FOR UPDATE</if>
+  </select>
+  <select id="selectByStore" resultMap="productMap">
+    SELECT <include refid="columns"/> FROM `products` WHERE `storeId`=#{storeId}
+    <if test="status != null">AND `status`=#{status}</if> ORDER BY `createdAt` DESC, `_id` DESC LIMIT #{limit}
+  </select>
+  <insert id="insert" parameterType="com.tencent.wxcloudrun.model.Product">
+    INSERT INTO `products` (<include refid="columns"/>)
+    VALUES (#{id},#{storeId},#{name},#{category},#{price},#{stock},#{sold},#{emoji},#{image},#{status},#{version},#{createdAt},#{updatedAt})
+  </insert>
+  <update id="updateDetails">
+    UPDATE `products` SET `name`=#{product.name}, `category`=#{product.category}, `price`=#{product.price},
+      `stock`=#{product.stock}, `emoji`=#{product.emoji}, `image`=#{product.image}, `status`=#{product.status},
+      `version`=`version`+1, `updatedAt`=#{product.updatedAt}
+    WHERE `_id`=#{product.id} AND `storeId`=#{product.storeId} AND `version`=#{expectedVersion}
+  </update>
+  <update id="updateStatus">
+    UPDATE `products` SET `status`=#{status}, `version`=`version`+1, `updatedAt`=#{updatedAt}
+    WHERE `_id`=#{id} AND `version`=#{expectedVersion}
+  </update>
+  <update id="deductStock">
+    UPDATE `products` SET `stock`=`stock`-#{quantity}, `version`=`version`+1, `updatedAt`=#{updatedAt}
+    WHERE `_id`=#{id} AND `version`=#{expectedVersion} AND `stock` &gt;= #{quantity} AND `status`='ON'
+  </update>
+  <update id="restoreStock">
+    UPDATE `products` SET `stock`=`stock`+#{quantity}, `version`=`version`+1, `updatedAt`=#{updatedAt} WHERE `_id`=#{id}
+  </update>
+  <update id="increaseSold">
+    UPDATE `products` SET `sold`=`sold`+#{quantity}, `version`=`version`+1, `updatedAt`=#{updatedAt} WHERE `_id`=#{id}
+  </update>
+  <select id="countLowStock" resultType="long">
+    SELECT COUNT(*) FROM `products` WHERE `storeId`=#{storeId} AND `status`='ON' AND `stock` &lt;= #{threshold}
+  </select>
+</mapper>
