@@ -7,7 +7,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.Collections;
 import static com.tencent.wxcloudrun.constant.SnacksConstants.*;
 
-/** 仅信任隔离公网入口后的微信网关；请求头不能代替网络边界。 */
+/** 仅信任隔离公网入口后的微信云托管调用链路；请求头不能代替网络边界。 */
 @Component
 public class WechatIdentityResolver {
   private final String appid;

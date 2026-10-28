@@ -17,7 +17,7 @@ public class SnacksController {
     this.identity = identity;
   }
 
-  /** 从可信微信网关解析身份，再以统一成功/失败信封返回 action 结果。 */
+  /** 从微信云托管调用链路解析身份，再以统一成功/失败信封返回 action 结果。 */
   @PostMapping(value = "/api/snacks", consumes = "application/json", produces = "application/json")
   public Data execute(@RequestBody Data event, HttpServletRequest request) {
     return SnacksResponse.ok(service.execute(event, identity.resolve(request)));

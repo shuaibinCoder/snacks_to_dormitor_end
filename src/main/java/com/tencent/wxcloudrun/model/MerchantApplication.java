@@ -8,7 +8,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class MerchantApplication extends BusinessEntity {
-  /** 申请人 OpenID，由可信网关注入，不能由申请资料指定。 */
+  /** 申请人 OpenID，由微信云托管调用链路注入，不能由申请资料指定。 */
   private String applicantOpenid;
   /** 申请时填写的店铺名称，审核通过后复制到店铺。 */
   private String storeName;

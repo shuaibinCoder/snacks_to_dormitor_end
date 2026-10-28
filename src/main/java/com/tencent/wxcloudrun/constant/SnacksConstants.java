@@ -1075,11 +1075,11 @@ public final class SnacksConstants {
   /** 微信语言参数。 */
   public static final String WECHAT_LANGUAGE = "zh_CN";
 
-  /** 微信网关来源请求头。 */
+  /** 微信云托管来源请求头。 */
   public static final String HEADER_WX_SOURCE = "X-WX-SOURCE";
-  /** 微信网关小程序 AppID 请求头。 */
+  /** 微信云托管小程序 AppID 请求头。 */
   public static final String HEADER_WX_APPID = "X-WX-APPID";
-  /** 微信网关 OpenID 请求头。 */
+  /** 微信云托管 OpenID 请求头。 */
   public static final String HEADER_WX_OPENID = "X-WX-OPENID";
   /** 多来源转发时禁止出现的来源 AppID 请求头。 */
   public static final String HEADER_WX_FROM_APPID = "X-WX-FROM-APPID";
