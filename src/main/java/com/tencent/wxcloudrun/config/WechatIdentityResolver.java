@@ -16,6 +16,7 @@ public class WechatIdentityResolver {
     this.appid = appid;
   }
 
+
   /** 校验唯一来源、AppID 和 OpenID 请求头，拒绝跨小程序身份复用。 */
   public String resolve(HttpServletRequest request) {
     String source = header(request, HEADER_WX_SOURCE);
