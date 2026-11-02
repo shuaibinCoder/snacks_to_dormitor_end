@@ -98,6 +98,8 @@ class NotificationDeliveryTest {
       }
       NotificationDelivery result = i.getArgument(0);
       delivery.setDeliveryStatus(result.getDeliveryStatus());
+      delivery.setLastErrorCode(result.getLastErrorCode());
+      delivery.setLastErrorMessage(result.getLastErrorMessage());
       return 1;
     });
     when(deliveries.skip(eq("delivery"), anyString(), anyLong())).thenAnswer(i -> {
@@ -158,6 +160,67 @@ class NotificationDeliveryTest {
     grant.setBoundBizId("different-order");
     assertFalse(service.send("notice"));
     verifyNoInteractions(client);
+  }
+
+  /** 购买者管理页测试只领取非订单授权，发送成功才标记消费。 */
+  @Test
+  void buyerTestUsesTestGrantAndReportsConfirmedSuccess() {
+    notification.setSubscriptionGrantId("");
+    notification.setRequireSpecificGrant(false);
+    grant.setScene("ADMIN_TEMPLATE_TEST");
+    grant.setBoundBizType("");
+    grant.setBoundBizId("");
+    when(grants.selectAvailableForTest("buyer", "BUYER", TEMPLATE_KEY)).thenReturn(grant);
+    when(grants.claim(any(), eq(false), eq("order"))).thenAnswer(i -> {
+      grant.setStatus("SENDING");
+      return 1;
+    });
+    assertTrue(service.send("notice"));
+    assertEquals("SUCCESS", delivery.getDeliveryStatus());
+    assertEquals("CONSUMED", grant.getStatus());
+    assertFalse(service.send("notice"));
+    verify(client, times(1)).send(any());
+  }
+
+  /** 明确的接口权限错误原样保留错误码，不丢弃成 UNKNOWN 或自动重试。 */
+  @Test
+  void permissionFailureRetainsWechatDetails() {
+    when(client.send(any())).thenReturn(of("errcode", -604101, "errmsg", "api permission denied"));
+    assertFalse(service.send("notice"));
+    assertEquals("FAILED_FINAL", delivery.getDeliveryStatus());
+    assertEquals("-604101", delivery.getLastErrorCode());
+    assertEquals("api permission denied", delivery.getLastErrorMessage());
+    assertFalse(service.send("notice"));
+    verify(client, times(1)).send(any());
+  }
+
+  /** HTTP 诊断码用于展示，不能改变“未知”的授权及投递终态。 */
+  @Test
+  void httpDiagnosticKeepsUnknownStateWithoutRetry() {
+    when(client.send(any())).thenReturn(of("errcode", "UNKNOWN", "diagnosticCode", "HTTP_502",
+        "errmsg", "微信接口返回 HTTP 502"));
+    assertFalse(service.send("notice"));
+    assertEquals("UNKNOWN", grant.getStatus());
+    assertEquals("UNKNOWN", delivery.getDeliveryStatus());
+    assertEquals("HTTP_502", delivery.getLastErrorCode());
+    assertEquals("微信接口返回 HTTP 502", delivery.getLastErrorMessage());
+    assertFalse(service.send("notice"));
+    verify(client, times(1)).send(any());
+  }
+
+  /** 网络异常只记录安全分类和根因类型，原始异常可能含凭据，不能透出。 */
+  @Test
+  void timeoutDiagnosticDoesNotLeakExceptionContents() {
+    when(client.send(any())).thenThrow(new org.springframework.web.client.ResourceAccessException(
+        "secret request", new java.net.SocketTimeoutException("sensitive details")));
+    assertFalse(service.send("notice"));
+    assertEquals("UNKNOWN", delivery.getDeliveryStatus());
+    assertEquals("WECHAT_NETWORK_ERROR", delivery.getLastErrorCode());
+    assertTrue(delivery.getLastErrorMessage().contains("SocketTimeoutException"));
+    assertFalse(delivery.getLastErrorMessage().contains("sensitive"));
+    assertFalse(delivery.getLastErrorMessage().contains("secret"));
+    assertFalse(service.send("notice"));
+    verify(client, times(1)).send(any());
   }
 
   /** 单元测试事务替身只验证调用顺序，真实行锁由 SnacksMysqlIT 验证。 */

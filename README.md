@@ -127,7 +127,10 @@ SELECT ROW_COUNT() AS created_admin_count;
 - `notification_templates` 表须已准备好，但无需手工插入模板记录。缺少固定模板时，管理表单、公开配置和本人诊断返回内存中的停用草稿（`enabled=false`、`miniprogramState=trial`、默认送达节点），读取不创建模板记录；缺表或数据库故障仍明确报错。
 - 在 Java 业务会话的“消息模板配置”填写模板 ID、实际关键词编号及接单/送达节点。有权限的管理员首次主动保存且参数校验通过后创建固定模板，后续保存更新原记录，保留主键和创建时间。补建、更新和审计共用 action 事务，并发保存按固定业务键及行锁处理；未授权或非法请求不能补记录。
 - 自动建表、迁移和启动初始化仍保持关闭，不需要重复执行 V1、同步字典或打开初始化开关。首次保存修复须重新构建并部署 Java 新版本后生效，单纯重新编译小程序或重启旧镜像无效。未配置时不启用微信推送，也不伪造发送成功。
-- 云托管控制台开启“开放接口服务”，授权 `cgi-bin/message/subscribe/send`，并创建新服务版本使配置生效。Java 通过 `http://api.weixin.qq.com/cgi-bin/message/subscribe/send` 调用，按 HTTP API 使用 `template_id`、`miniprogram_state` 并检查 `errcode`，不依赖 `wx-server-sdk`。
+- 云托管控制台开启“开放接口服务”，在云调用权限中核对 `/cgi-bin/message/subscribe/send`，并按控制台要求创建新服务版本使配置生效。Java 通过 `http://api.weixin.qq.com/cgi-bin/message/subscribe/send` 调用，按 HTTP API 使用 `template_id`、`miniprogram_state` 并检查 `errcode`，不依赖 `wx-server-sdk`。
+- 发送客户端独立解析 JSON，不再因响应为 `text/plain` 或 `application/octet-stream` 丢失结果；非 2xx 响应中的明确微信错误码也会保存。只有 HTTP 成功且 `errcode=0` 才确认发送成功；HTML、空响应和非法错误码按未知处理，不保存原始错误页或网络异常文本。
+- “授权成功”不等于微信推送成功。通过管理页本次消息对应的投递记录定位：`-604101` 检查云调用权限，`41001` 检查开放接口免令牌调用是否生效，`47003` 检查模板关键词和字段值，`43101` 检查微信剩余授权；`HTTP_*`、`WECHAT_NETWORK_ERROR`、`WECHAT_RESPONSE_INVALID` 仍为 `UNKNOWN`，不是明确拒绝，不自动重发。
+- 本次只读核实到云端两条 `UNKNOWN` 记录，旧版本未保存具体异常，不能据此断言是权限或响应格式问题。响应兼容及诊断修复已经过本地测试，需部署新 Java 并重新编译小程序后才能取得新诊断；本次未发送真实测试消息或修改云端权限。
 - 商家/平台业务通知保留站内信；买家每单授权仅用于 `ACCEPTED` 或 `DELIVERED` 中选定的一次通知。必须是本人、BUYER、ORDER_SUBMIT 的本单 grant，不能转绑或借用历史授权。
 - 站内消息及待发送记录随事务保存，微信调用在提交后执行。发送前原子领取授权；明确失败或结果未知只记录诊断，不自动重发，也不承诺外部消息严格 exactly-once。进程中断残留的 PENDING/SENDING 需人工诊断，本次未建设恢复重试队列。
 - 同一 AppID 的微信授权配额不会因 MySQL 与云数据库隔离而独立；真实测试需指定人员单独授权，避免两边同时推送。
@@ -168,7 +171,7 @@ mvn -B -ntp -Pmysql-it verify
 "/Applications/IntelliJ IDEA CE.app/Contents/plugins/maven/lib/maven3/bin/mvn" -B -ntp -f /Users/shuaibin/IdeaProjects/snacks_to_dormitor_end/pom.xml package
 ```
 
-- 普通 `test` 不要求 MySQL，覆盖 45 个 action 的契约、身份权限、参数、状态、通知，及 15 组实体/Mapper/XML、JSON TypeHandler 和历史建表 COMMENT 检查。本次 Java 11 `clean package` 成功，32 项通过、1 项共享库只读检查按配置跳过；新增覆盖模板缺记录读取、首次及后续保存、非法请求、权限拦截和数据库/审计错误传播。
+- 普通 `test` 不要求 MySQL，覆盖 45 个 action 的契约、身份权限、参数、状态、通知，及 15 组实体/Mapper/XML、JSON TypeHandler 和历史建表 COMMENT 检查。本次 Java 11 `clean package` 成功，39 项通过、1 项共享库只读检查按配置跳过；覆盖模板缺记录读取、首次及后续保存、非法请求、权限拦截和数据库/审计错误传播，并增加响应类型兼容、HTTP 微信错误保留、非法响应、测试授权投递及未知结果不重发回归。
 - `mysql-it` 仅对自身创建的隔离 MySQL 容器显式开启迁移和种子数据，执行原业务回归，不改变本地或云端默认开关。新增模板首次保存、并发首次保存及审计失败事务回滚用例；这些用例已通过编译，但本机无 Docker，尚未实际执行，不以单元测试代替真实 SQL/回滚验收。微信客户端使用测试替身，不会发真实消息。
 - 制品为 `target/springboot-wxcloudrun-1.0.jar`。构建目录 `target/` 和本地 `.idea/` 不应提交。
 - 存活探针：`/actuator/health/liveness`；就绪探针：`/actuator/health/readiness`（含数据库）；综合健康：`/actuator/health`。业务端口默认 80，健康接口不返回内部详情。

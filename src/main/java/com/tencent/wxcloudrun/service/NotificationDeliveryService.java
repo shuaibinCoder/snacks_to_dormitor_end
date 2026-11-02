@@ -3,6 +3,8 @@ package com.tencent.wxcloudrun.service;
 import com.tencent.wxcloudrun.dao.*;
 import com.tencent.wxcloudrun.dto.Data;
 import com.tencent.wxcloudrun.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.*;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -14,6 +16,7 @@ import static com.tencent.wxcloudrun.constant.SnacksConstants.*;
 /** 微信订阅消息的独立事务领取、外部发送和最终诊断记录。 */
 @Service
 public class NotificationDeliveryService {
+  private static final Logger LOG = LoggerFactory.getLogger(NotificationDeliveryService.class);
   private final NotificationMapper notifications;
   private final NotificationDeliveryMapper deliveries;
   private final NotificationTemplateMapper templates;
@@ -45,7 +48,11 @@ public class NotificationDeliveryService {
     try {
       response = client.send(payload(claim.object("notification"), claim.object("config")));
     } catch (RuntimeException error) {
-      response = of("errcode", WechatResultCode.UNKNOWN.code(), "errmsg", "微信发送结果未知，不自动重发");
+      response = WechatMessageClient.unknownFailure(error);
+    }
+    if (!WechatResultCode.SUCCESS.matches(response.text("errcode"))) {
+      LOG.warn("微信投递未确认成功：notificationId={}，code={}，diagnosticCode={}",
+          notificationId, response.text("errcode"), response.text("diagnosticCode"));
     }
     final Data result = response;
     tx.execute(status -> {
@@ -116,7 +123,7 @@ public class NotificationDeliveryService {
     delivery.setDeliveryStatus(success
         ? DeliveryStatus.SUCCESS.code()
         : unknown ? DeliveryStatus.UNKNOWN.code() : DeliveryStatus.FAILED_FINAL.code());
-    delivery.setLastErrorCode(success ? "" : result.text("errcode"));
+    delivery.setLastErrorCode(success ? "" : result.text("diagnosticCode", result.text("errcode")));
     delivery.setLastErrorMessage(success ? "" : truncate(result.text("errmsg"), ERROR_DETAIL_LENGTH));
     delivery.setSentAt(success ? now() : 0);
     require(deliveries.finish(Entities.update(delivery)) == 1, "通知投递状态已变化");

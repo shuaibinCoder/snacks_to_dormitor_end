@@ -633,6 +633,29 @@ public final class SnacksConstants {
     }
   }
 
+  /** 本地投递诊断分类；这些分类不代表微信明确拒绝，投递状态仍保持 UNKNOWN。 */
+  public enum WechatDiagnosticCode implements Coded {
+    /** HTTP 响应缺少可确认结果，后接状态码。 */
+    HTTP_ERROR_PREFIX("HTTP_"),
+    /** 响应不是合法的微信结果对象。 */
+    INVALID_RESPONSE("WECHAT_RESPONSE_INVALID"),
+    /** 网络、DNS、连接或读取超时。 */
+    NETWORK_ERROR("WECHAT_NETWORK_ERROR"),
+    /** 客户端处理异常。 */
+    CLIENT_ERROR("WECHAT_CLIENT_ERROR");
+
+    private final String code;
+
+    WechatDiagnosticCode(String code) {
+      this.code = code;
+    }
+
+    @Override
+    public String code() {
+      return code;
+    }
+  }
+
   /** 中文字典类型，与 resources/dictionaries.json 一一对应。 */
   public enum DictionaryType implements Coded {
     /** 普通用户角色字典。 */

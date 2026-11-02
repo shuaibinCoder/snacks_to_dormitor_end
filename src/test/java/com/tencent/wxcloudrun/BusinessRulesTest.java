@@ -365,7 +365,75 @@ class BusinessRulesTest {
     server.reset();
     server.expect(requestTo("http://api.weixin.qq.com/cgi-bin/message/subscribe/send"))
         .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
-    assertThrows(IllegalStateException.class, () -> client.send(payload));
+    assertEquals("UNKNOWN", client.send(payload).text("errcode"));
     server.verify();
+  }
+
+  /** 微信 JSON 响应不能因 text/plain 或缺省 Content-Type 而被误判为未知。 */
+  @Test
+  void wechatJsonResponseDoesNotDependOnContentType() {
+    RestTemplate http = new RestTemplate();
+    MockRestServiceServer server = MockRestServiceServer.createServer(http);
+    WechatMessageClient client = wechatClient(http);
+    for (MediaType type : Arrays.asList(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN,
+        MediaType.APPLICATION_OCTET_STREAM)) {
+      server.expect(requestTo(WECHAT_SUBSCRIBE_URL))
+          .andRespond(withSuccess("{\"errcode\":0,\"errmsg\":\"ok\"}", type));
+      assertEquals("0", client.send(of("template_id", "template")).text("errcode"));
+      server.verify();
+      server.reset();
+    }
+  }
+
+  /** 非 2xx 响应保留明确微信错误；HTML 和伪成功不能算发送成功。 */
+  @Test
+  void wechatHttpFailureKeepsErrorCodeAndRejectsAmbiguousSuccess() {
+    RestTemplate http = new RestTemplate();
+    MockRestServiceServer server = MockRestServiceServer.createServer(http);
+    WechatMessageClient client = wechatClient(http);
+    server.expect(requestTo(WECHAT_SUBSCRIBE_URL)).andRespond(
+        org.springframework.test.web.client.response.MockRestResponseCreators.withStatus(org.springframework.http.HttpStatus.FORBIDDEN)
+            .contentType(MediaType.TEXT_PLAIN).body("{\"errcode\":-604101,\"errmsg\":\"api permission denied\"}"));
+    Data forbidden = client.send(new Data());
+    assertEquals("-604101", forbidden.text("errcode"));
+    assertEquals("api permission denied", forbidden.text("errmsg"));
+    server.verify();
+    server.reset();
+    for (String body : Arrays.asList("<html>secret gateway response</html>", "{\"errcode\":0}")) {
+      server.expect(requestTo(WECHAT_SUBSCRIBE_URL)).andRespond(
+          org.springframework.test.web.client.response.MockRestResponseCreators.withStatus(org.springframework.http.HttpStatus.BAD_GATEWAY)
+              .contentType(MediaType.TEXT_HTML).body(body));
+      Data result = client.send(new Data());
+      assertEquals("UNKNOWN", result.text("errcode"));
+      assertEquals("HTTP_502", result.text("diagnosticCode"));
+      assertTrue(result.text("errmsg").contains("502"));
+      assertFalse(result.text("errmsg").contains("secret"));
+      server.verify();
+      server.reset();
+    }
+  }
+
+  /** 响应无合法整数错误码时保持未知，不能把空值、HTML 或空对象当成功。 */
+  @Test
+  void invalidWechatResponsesRemainUnknown() {
+    RestTemplate http = new RestTemplate();
+    MockRestServiceServer server = MockRestServiceServer.createServer(http);
+    WechatMessageClient client = wechatClient(http);
+    for (String body : Arrays.asList("", "{}", "null", "[]", "<html>internal details</html>",
+        "{\"errcode\":null}", "{\"errcode\":false}", "{\"errcode\":0.5}", "{\"errcode\":0} trailing")) {
+      server.expect(requestTo(WECHAT_SUBSCRIBE_URL)).andRespond(withSuccess(body, MediaType.TEXT_PLAIN));
+      Data result = client.send(new Data());
+      assertEquals("UNKNOWN", result.text("errcode"));
+      assertEquals("WECHAT_RESPONSE_INVALID", result.text("diagnosticCode"));
+      assertFalse(result.text("errmsg").contains("internal details"));
+      server.verify();
+      server.reset();
+    }
+  }
+
+  private WechatMessageClient wechatClient(RestTemplate http) {
+    RestTemplateBuilder builder = mock(RestTemplateBuilder.class, RETURNS_SELF);
+    when(builder.build()).thenReturn(http);
+    return new WechatMessageClient(builder);
   }
 }
