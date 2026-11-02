@@ -41,11 +41,10 @@ public class NotificationService {
     this.view = view;
   }
 
-  /** 读取固定统一模板；未初始化时明确失败，不创建客户端指定模板。 */
+  /** 读取固定统一模板；缺记录时返回停用草稿，读取不写库，数据库异常仍向外抛出。 */
   public NotificationTemplate config() {
     NotificationTemplate config = templates.selectByKey(TEMPLATE_KEY);
-    require(config != null, "通知模板尚未初始化");
-    return config;
+    return config == null ? NotificationTemplate.defaultConfig() : config;
   }
 
   /** 管理端返回完整模板及中文节点标签。 */
@@ -62,11 +61,9 @@ public class NotificationService {
         .with("templateKey", TEMPLATE_KEY, "enabled", config.isEnabled() && !config.getTemplateId().isEmpty());
   }
 
-  /** 管理员配置模板关键词和买家推送节点，审计与配置共用事务。 */
+  /** 管理员首次保存补建固定模板；补建、更新和审计由 action 入口的事务统一提交。 */
   public Data saveConfig(Data input, String openid) {
     PlatformUser operator = identity.requirePlatform(openid, codes(PlatformRole.ADMIN, PlatformRole.SUPER));
-    NotificationTemplate old = config();
-    Data before = Entities.snapshot(old);
     String stage = input.text("buyerOrderPushStage", BuyerOrderPushStage.DELIVERED.code());
     String state = input.text("miniprogramState", MiniProgramState.TRIAL.code());
     require(oneOf(stage, codes(BuyerOrderPushStage.ACCEPTED, BuyerOrderPushStage.DELIVERED))
@@ -79,6 +76,11 @@ public class NotificationService {
       require(value.matches(TEMPLATE_FIELD_PATTERN) && keys.add(value), "模板字段必须有效且不能重复");
     }
     require(!input.flag("enabled") || !input.text("templateId").isEmpty(), "请先填写模板 ID");
+    // 只在鉴权和参数校验通过后的主动保存中补记录；唯一业务键冲突时保留已有配置。
+    templates.insertIgnore(Entities.create(NotificationTemplate.defaultConfig()));
+    NotificationTemplate old = templates.selectByKeyForUpdate(TEMPLATE_KEY);
+    require(old != null, "通知模板初始化失败");
+    Data before = Entities.snapshot(old);
     old.setTemplateId(input.text("templateId"));
     old.setEnabled(input.flag("enabled"));
     old.setMiniprogramState(state);
@@ -89,7 +91,7 @@ public class NotificationService {
         AuditTargetType.NOTIFICATION_TEMPLATE.code(), TEMPLATE_KEY, before,
         of("templateId", old.getTemplateId(), "enabled", old.isEnabled(), "buyerOrderPushStage", stage),
         "配置订阅消息模板");
-    return view.data(config());
+    return view.data(old);
   }
 
   /** 每次 ACCEPT 生成独立一次性授权，其他结果只记录最近偏好。 */

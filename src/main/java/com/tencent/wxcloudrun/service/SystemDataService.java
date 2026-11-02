@@ -8,8 +8,6 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import static com.tencent.wxcloudrun.dto.Data.*;
-import static com.tencent.wxcloudrun.constant.SnacksConstants.*;
 
 /** 固定字典、字段说明和默认通知模板的幂等初始化。 */
 @Service
@@ -39,15 +37,7 @@ public class SystemDataService implements ApplicationRunner {
       return;
     }
     seed(false);
-    NotificationTemplate template = Entities.copy(of("_id", TEMPLATE_KEY, "key", TEMPLATE_KEY,
-        "keyLabel", "统一业务状态通知模板",
-        "description", "购买者订单关键节点微信提醒；商家和平台使用站内信",
-        "policyVersion", NOTIFICATION_POLICY_VERSION, "policyVersionLabel", "仅购买者微信推送",
-        "enabled", false, "templateId", "", "miniprogramState", MiniProgramState.TRIAL.code(),
-        "buyerOrderPushStage", BuyerOrderPushStage.DELIVERED.code(),
-        "fields", of("titleKey", "phrase8", "statusKey", "phrase23", "timeKey", "time3", "remarkKey", "thing2")),
-        NotificationTemplate.class);
-    templates.insertIgnore(Entities.create(template));
+    templates.insertIgnore(Entities.create(NotificationTemplate.defaultConfig()));
   }
 
   /** 管理员主动同步时才覆盖字典和字段说明，不触碰订单等业务表。 */

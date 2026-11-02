@@ -14,6 +14,9 @@
   <select id="selectByKey" resultMap="templateMap">
     SELECT <include refid="columns"/> FROM `notification_templates` WHERE `key`=#{key} LIMIT 1
   </select>
+  <select id="selectByKeyForUpdate" resultMap="templateMap">
+    SELECT <include refid="columns"/> FROM `notification_templates` WHERE `key`=#{key} LIMIT 1 FOR UPDATE
+  </select>
   <insert id="insertIgnore" parameterType="com.tencent.wxcloudrun.model.NotificationTemplate">
     INSERT INTO `notification_templates` (<include refid="columns"/>)
     VALUES (#{id},#{key},#{keyLabel},#{description},#{policyVersion},#{policyVersionLabel},#{templateId},#{enabled},#{miniprogramState},#{buyerOrderPushStage},#{fields,typeHandler=com.tencent.wxcloudrun.dao.DataTypeHandler},#{createdAt},#{updatedAt})

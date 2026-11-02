@@ -314,6 +314,86 @@ class SnacksMysqlIT {
     });
   }
 
+  /** 隔离库清空模板后，读取不落库，只有合法管理员主动保存才创建记录。 */
+  @Test
+  void firstTemplateSaveCreatesRecordAndLaterSaveKeepsCreationTime() {
+    jdbc.update("DELETE FROM notification_templates WHERE `key`=?", TEMPLATE_KEY);
+    try {
+      Data draft = object("getNotificationAdminConfig", admin, new Data());
+      assertFalse(draft.flag("enabled"));
+      assertFalse(object("getNotificationConfig", buyer, new Data()).flag("enabled"));
+      assertFalse(object("getMyNotificationDiagnostics", admin, new Data()).object("config").flag("enabled"));
+      assertNull(templates.selectByKey(TEMPLATE_KEY));
+      assertThrows(BusinessException.class, () -> call("saveNotificationTemplate", buyer, templateInput("forbidden")));
+      assertThrows(BusinessException.class, () -> call("saveNotificationTemplate", admin,
+          of("template", draft.with("enabled", true, "templateId", ""))));
+      assertNull(templates.selectByKey(TEMPLATE_KEY));
+      Data first = object("saveNotificationTemplate", admin, templateInput("first-template"));
+      assertEquals("first-template", first.text("templateId"));
+      assertEquals(TEMPLATE_KEY, first.text("_id"));
+      assertTrue(first.number("createdAt") > 0);
+      Data second = object("saveNotificationTemplate", admin, templateInput("second-template"));
+      assertEquals(first.number("createdAt"), second.number("createdAt"));
+      assertEquals("second-template", templates.selectByKey(TEMPLATE_KEY).getTemplateId());
+      assertEquals(1, count("SELECT COUNT(*) FROM notification_templates WHERE `key`=?", TEMPLATE_KEY));
+      assertEquals(2, count("SELECT COUNT(*) FROM audit_logs WHERE action=? AND operatorOpenid=?",
+          AuditAction.SAVE_NOTIFICATION_TEMPLATE.code(), admin));
+      verifyNoInteractions(wechat);
+    } finally {
+      templates.insertIgnore(Entities.create(NotificationTemplate.defaultConfig()));
+    }
+  }
+
+  /** 同一固定业务键的并发首次保存只生成一条模板，后续保存按行锁串行提交。 */
+  @Test
+  void concurrentFirstTemplateSavesUseSingleRecord() throws Exception {
+    String otherAdmin = "other_" + id();
+    platformUser(otherAdmin);
+    jdbc.update("DELETE FROM notification_templates WHERE `key`=?", TEMPLATE_KEY);
+    try {
+      List<Object> results = race(
+          () -> call("saveNotificationTemplate", admin, templateInput("first-template")),
+          () -> call("saveNotificationTemplate", otherAdmin, templateInput("second-template")));
+      assertEquals(2, results.stream().filter(Data.class::isInstance).count());
+      assertEquals(1, count("SELECT COUNT(*) FROM notification_templates WHERE `key`=?", TEMPLATE_KEY));
+      assertTrue(Arrays.asList("first-template", "second-template").contains(templates.selectByKey(TEMPLATE_KEY).getTemplateId()));
+      assertEquals(2, count("SELECT COUNT(*) FROM audit_logs WHERE action=? AND operatorOpenid IN (?,?)",
+          AuditAction.SAVE_NOTIFICATION_TEMPLATE.code(), admin, otherAdmin));
+    } finally {
+      templates.insertIgnore(Entities.create(NotificationTemplate.defaultConfig()));
+    }
+  }
+
+  /** 只在测试容器制造审计 SQL 失败，验证补建及更新都随 action 事务回滚。 */
+  @Test
+  void templateAuditFailureRollsBackFirstInsertAndExistingUpdate() {
+    NotificationTemplate existing = templates.selectByKey(TEMPLATE_KEY);
+    Data before = Entities.snapshot(existing);
+    jdbc.execute("CREATE TRIGGER fail_template_audit BEFORE INSERT ON audit_logs FOR EACH ROW "
+        + "BEGIN IF NEW.action='SAVE_NOTIFICATION_TEMPLATE' THEN "
+        + "SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='测试审计失败'; END IF; END");
+    try {
+      assertThrows(org.springframework.dao.DataAccessException.class,
+          () -> call("saveNotificationTemplate", admin, templateInput("changed-template")));
+      assertEquals(before, Entities.snapshot(templates.selectByKey(TEMPLATE_KEY)));
+      jdbc.update("DELETE FROM notification_templates WHERE `key`=?", TEMPLATE_KEY);
+      assertThrows(org.springframework.dao.DataAccessException.class,
+          () -> call("saveNotificationTemplate", admin, templateInput("first-template")));
+      assertNull(templates.selectByKey(TEMPLATE_KEY));
+      assertEquals(0, count("SELECT COUNT(*) FROM audit_logs WHERE action=? AND operatorOpenid=?",
+          AuditAction.SAVE_NOTIFICATION_TEMPLATE.code(), admin));
+    } finally {
+      jdbc.execute("DROP TRIGGER fail_template_audit");
+      templates.insertIgnore(existing);
+    }
+  }
+
+  private Data templateInput(String templateId) {
+    return of("template", of("templateId", templateId, "enabled", true,
+        "miniprogramState", MiniProgramState.TRIAL.code(), "buyerOrderPushStage", BuyerOrderPushStage.DELIVERED.code(),
+        "fields", of("titleKey", "phrase8", "statusKey", "phrase23", "timeKey", "time3", "remarkKey", "thing2")));
+  }
+
   @SafeVarargs
   private final List<Object> race(Supplier<Object>... tasks) throws Exception {
     ExecutorService pool = Executors.newFixedThreadPool(tasks.length);

@@ -2,6 +2,8 @@ package com.tencent.wxcloudrun.model;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import static com.tencent.wxcloudrun.dto.Data.of;
+import static com.tencent.wxcloudrun.constant.SnacksConstants.*;
 
 /** 统一订阅消息模板及发送策略，对应 notification_templates 表。 */
 @Data
@@ -27,4 +29,16 @@ public class NotificationTemplate extends BusinessEntity {
   private String buyerOrderPushStage;
   /** 模板语义到实际微信关键词编号的映射。 */
   private com.tencent.wxcloudrun.dto.Data fields;
+
+  /** 构造独立的停用默认模板，仅在内存中创建，不触发数据库写入。 */
+  public static NotificationTemplate defaultConfig() {
+    return Entities.copy(of("_id", TEMPLATE_KEY, "key", TEMPLATE_KEY,
+        "keyLabel", "统一业务状态通知模板",
+        "description", "购买者订单关键节点微信提醒；商家和平台使用站内信",
+        "policyVersion", NOTIFICATION_POLICY_VERSION, "policyVersionLabel", "仅购买者微信推送",
+        "enabled", false, "templateId", "", "miniprogramState", MiniProgramState.TRIAL.code(),
+        "buyerOrderPushStage", BuyerOrderPushStage.DELIVERED.code(),
+        "fields", of("titleKey", "phrase8", "statusKey", "phrase23", "timeKey", "time3", "remarkKey", "thing2")),
+        NotificationTemplate.class);
+  }
 }

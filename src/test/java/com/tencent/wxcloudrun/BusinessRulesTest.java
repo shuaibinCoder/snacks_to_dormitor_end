@@ -98,6 +98,131 @@ class BusinessRulesTest {
             "CONTACTED", "MERCHANT_APPLICATION", "id", "/pages/messages/index", "key").text("statusText"));
   }
 
+  /** 缺记录的管理表单、公开配置及诊断均可读，读取不补数据或开启发送。 */
+  @Test
+  void missingNotificationTemplateReturnsDisabledDraftWithoutWriting() throws Exception {
+    NotificationTemplateMapper templates = mock(NotificationTemplateMapper.class);
+    NotificationService service = notificationService(templates, mock(IdentityService.class));
+    Data admin = service.adminConfig();
+    assertEquals(TEMPLATE_KEY, admin.text("key"));
+    assertEquals("", admin.text("templateId"));
+    assertFalse(admin.flag("enabled"));
+    assertEquals("trial", admin.text("miniprogramState"));
+    assertEquals("DELIVERED", admin.text("buyerOrderPushStage"));
+    assertEquals("phrase8", admin.object("fields").text("titleKey"));
+    assertEquals(0, admin.number("createdAt"));
+    assertFalse(service.publicConfig().flag("enabled"));
+    assertFalse(service.diagnostics("buyer").object("config").flag("enabled"));
+    verify(templates, times(3)).selectByKey(TEMPLATE_KEY);
+    verifyNoMoreInteractions(templates);
+    NotificationTemplate draft = service.config();
+    draft.getFields().put("titleKey", "changed");
+    assertEquals("phrase8", service.config().getFields().text("titleKey"));
+  }
+
+  /** 首次主动保存补固定模板，之后保存保留主键、创建时间及内部策略。 */
+  @Test
+  void notificationTemplateCanBeCreatedAndUpdatedFromAdminSave() throws Exception {
+    NotificationTemplateMapper templates = mock(NotificationTemplateMapper.class);
+    IdentityService identity = mock(IdentityService.class);
+    PlatformUser operator = new PlatformUser();
+    when(identity.requirePlatform("admin", codes(PlatformRole.ADMIN, PlatformRole.SUPER))).thenReturn(operator);
+    java.util.concurrent.atomic.AtomicReference<NotificationTemplate> stored = new java.util.concurrent.atomic.AtomicReference<>();
+    when(templates.insertIgnore(any())).thenAnswer(invocation -> {
+      if (stored.get() != null) {
+        return 0;
+      }
+      stored.set(invocation.getArgument(0));
+      return 1;
+    });
+    when(templates.selectByKeyForUpdate(TEMPLATE_KEY)).thenAnswer(invocation -> stored.get());
+    when(templates.updateConfig(any())).thenReturn(1);
+    NotificationService service = notificationService(templates, identity);
+    Data first = service.saveConfig(notificationInput().with("key", "untrusted", "_id", "untrusted",
+        "policyVersion", "untrusted", "createdAt", 1), "admin");
+    assertEquals(TEMPLATE_KEY, first.text("_id"));
+    assertEquals(TEMPLATE_KEY, first.text("key"));
+    assertEquals(NOTIFICATION_POLICY_VERSION, first.text("policyVersion"));
+    assertEquals("wx-template", first.text("templateId"));
+    assertTrue(first.flag("enabled"));
+    assertTrue(first.number("createdAt") > 1);
+    long createdAt = first.number("createdAt");
+    stored.get().setId("legacy-template-id");
+    Data second = service.saveConfig(notificationInput().with("templateId", "second-template", "enabled", false), "admin");
+    assertEquals("legacy-template-id", second.text("_id"));
+    assertEquals(createdAt, second.number("createdAt"));
+    assertEquals("second-template", second.text("templateId"));
+    assertFalse(second.flag("enabled"));
+    verify(identity).audit(eq(operator), eq(AuditAction.SAVE_NOTIFICATION_TEMPLATE.code()),
+        eq(AuditTargetType.NOTIFICATION_TEMPLATE.code()), eq(TEMPLATE_KEY),
+        argThat((Data before) -> !before.flag("enabled") && before.text("templateId").isEmpty()),
+        argThat((Data after) -> after.flag("enabled") && "wx-template".equals(after.text("templateId"))), anyString());
+    verify(identity).audit(eq(operator), eq(AuditAction.SAVE_NOTIFICATION_TEMPLATE.code()),
+        eq(AuditTargetType.NOTIFICATION_TEMPLATE.code()), eq(TEMPLATE_KEY),
+        argThat((Data before) -> before.flag("enabled") && "wx-template".equals(before.text("templateId"))),
+        argThat((Data after) -> !after.flag("enabled") && "second-template".equals(after.text("templateId"))), anyString());
+    org.mockito.InOrder order = inOrder(templates);
+    for (int i = 0; i < 2; i++) {
+      order.verify(templates).insertIgnore(any());
+      order.verify(templates).selectByKeyForUpdate(TEMPLATE_KEY);
+      order.verify(templates).updateConfig(any());
+    }
+  }
+
+  /** 无权限或参数非法时不能通过首次保存补模板。 */
+  @Test
+  void invalidOrUnauthorizedTemplateSaveDoesNotInitializeRecord() throws Exception {
+    NotificationTemplateMapper templates = mock(NotificationTemplateMapper.class);
+    IdentityService identity = mock(IdentityService.class);
+    NotificationService service = notificationService(templates, identity);
+    when(identity.requirePlatform("buyer", codes(PlatformRole.ADMIN, PlatformRole.SUPER)))
+        .thenThrow(new BusinessException("没有配置权限"));
+    assertThrows(BusinessException.class, () -> service.saveConfig(notificationInput(), "buyer"));
+    for (Data invalid : Arrays.asList(
+        notificationInput().with("buyerOrderPushStage", "CREATED"),
+        notificationInput().with("miniprogramState", "invalid"),
+        notificationInput().with("templateId", ""),
+        notificationInput().with("fields", of("titleKey", "phrase8", "statusKey", "phrase8", "timeKey", "time3", "remarkKey", "thing2")),
+        notificationInput().with("fields", new Data()))) {
+      assertThrows(BusinessException.class, () -> service.saveConfig(invalid, "admin"));
+    }
+    verifyNoInteractions(templates);
+    verify(identity, never()).audit(any(), anyString(), anyString(), anyString(), any(), any(), anyString());
+  }
+
+  /** 缺表及数据库故障不能伪装成未配置草稿；写入和审计错误必须继续向事务入口抛出。 */
+  @Test
+  void notificationDatabaseAndAuditFailuresAreNotSwallowed() throws Exception {
+    NotificationTemplateMapper templates = mock(NotificationTemplateMapper.class);
+    IdentityService identity = mock(IdentityService.class);
+    NotificationService service = notificationService(templates, identity);
+    RuntimeException failure = new org.springframework.dao.DataAccessResourceFailureException("数据库不可用");
+    when(templates.selectByKey(TEMPLATE_KEY)).thenThrow(failure);
+    assertSame(failure, assertThrows(RuntimeException.class, service::adminConfig));
+    assertSame(failure, assertThrows(RuntimeException.class, service::publicConfig));
+    when(templates.insertIgnore(any())).thenThrow(failure);
+    assertSame(failure, assertThrows(RuntimeException.class, () -> service.saveConfig(notificationInput(), "admin")));
+    verify(templates, never()).updateConfig(any());
+    reset(templates);
+    when(templates.selectByKeyForUpdate(TEMPLATE_KEY)).thenReturn(Entities.create(NotificationTemplate.defaultConfig()));
+    when(templates.updateConfig(any())).thenReturn(1);
+    doThrow(failure).when(identity).audit(any(), anyString(), anyString(), anyString(), any(), any(), anyString());
+    assertSame(failure, assertThrows(RuntimeException.class, () -> service.saveConfig(notificationInput(), "admin")));
+  }
+
+  private NotificationService notificationService(NotificationTemplateMapper templates, IdentityService identity) throws Exception {
+    ObjectMapper json = new ObjectMapper();
+    Labels labels = new Labels(json);
+    return new NotificationService(templates, mock(NotificationPreferenceMapper.class), null, null,
+        mock(NotificationDeliveryMapper.class), null, null, labels, identity, new EntityView(json, labels));
+  }
+
+  private Data notificationInput() {
+    return of("templateId", "wx-template", "enabled", true, "miniprogramState", "trial",
+        "buyerOrderPushStage", "DELIVERED",
+        "fields", of("titleKey", "phrase8", "statusKey", "phrase23", "timeKey", "time3", "remarkKey", "thing2"));
+  }
+
   @Test
   void amountsQuantitiesAndContactFieldsAreValidated() {
     for (Object value : Arrays.asList(-1, "NaN", "Infinity", 1.1, "1e100")) {
