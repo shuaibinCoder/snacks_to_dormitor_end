@@ -1,6 +1,10 @@
 package com.tencent.wxcloudrun;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tencent.wxcloudrun.config.*;
+import com.tencent.wxcloudrun.dao.*;
+import com.tencent.wxcloudrun.model.Product;
+import com.tencent.wxcloudrun.model.Store;
 import com.tencent.wxcloudrun.controller.SnacksController;
 import com.tencent.wxcloudrun.dto.*;
 import com.tencent.wxcloudrun.service.*;
@@ -10,7 +14,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static com.tencent.wxcloudrun.constant.SnacksConstants.Action;
+import static com.tencent.wxcloudrun.constant.SnacksConstants.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static com.tencent.wxcloudrun.dto.Data.*;
@@ -79,6 +83,99 @@ class SnacksContractTest {
           .andExpect(jsonPath("$.data.items[0].price").value(123));
     }
     verify(service, times(45)).execute(any(Data.class), eq("gateway-user"));
+  }
+
+  /** 使用真实 action、目录服务和实体转换，避免仅模拟响应外壳漏掉字段层级错误。 */
+  private MockMvc storeMvc(StoreMapper stores, ProductMapper products) throws Exception {
+    ObjectMapper json = new ObjectMapper();
+    IdentityService identity = mock(IdentityService.class);
+    CatalogService catalog = new CatalogService(stores, products, mock(OrderMapper.class), identity,
+        new EntityView(json, new Labels(json)));
+    SnacksService real = new SnacksService(identity, mock(ApplicationService.class), catalog,
+        mock(OrderService.class), mock(PlatformService.class), mock(NotificationService.class));
+    return MockMvcBuilders.standaloneSetup(new SnacksController(real, new WechatIdentityResolver("wx-test")))
+        .setControllerAdvice(new SnacksExceptionHandler()).build();
+  }
+
+  private Store publicStore() {
+    Store store = new Store();
+    store.setId("cr_store");
+    store.setName("测试小店");
+    store.setApprovalStatus(StoreApprovalStatus.APPROVED.code());
+    store.setPlatformStatus(StorePlatformStatus.ACTIVE.code());
+    store.setBusinessStatus(StoreBusinessStatus.OPEN.code());
+    store.setMinimumOrder(500);
+    return store;
+  }
+
+  @Test
+  void storeDetailReturnsNestedStoreAndSiblingProducts() throws Exception {
+    StoreMapper stores = mock(StoreMapper.class);
+    ProductMapper products = mock(ProductMapper.class);
+    when(stores.selectById("cr_store", false)).thenReturn(publicStore());
+    Product product = new Product();
+    product.setId("cr_product");
+    product.setStoreId("cr_store");
+    product.setName("薯片");
+    product.setCategory("零食");
+    product.setPrice(350);
+    product.setStatus(ProductStatus.ON.code());
+    when(products.selectByStore("cr_store", ProductStatus.ON.code(), MAX_LIST_SIZE))
+        .thenReturn(Collections.singletonList(product));
+    storeMvc(stores, products).perform(request("getStore")
+        .content("{\"action\":\"getStore\",\"storeId\":\"cr_store\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data.store._id").value("cr_store"))
+        .andExpect(jsonPath("$.data.store.name").value("测试小店"))
+        .andExpect(jsonPath("$.data.store.isOpen").value(true))
+        .andExpect(jsonPath("$.data.store.minimumOrder").value(500))
+        .andExpect(jsonPath("$.data.store.products").doesNotExist())
+        .andExpect(jsonPath("$.data.products[0]._id").value("cr_product"))
+        .andExpect(jsonPath("$.data.products[0].storeId").value("cr_store"))
+        .andExpect(jsonPath("$.data.products[0].price").value(350))
+        .andExpect(jsonPath("$.data.products[0].category").value("零食"))
+        .andExpect(jsonPath("$.data.name").doesNotExist());
+    verify(products).selectByStore("cr_store", ProductStatus.ON.code(), MAX_LIST_SIZE);
+  }
+
+  @Test
+  void storeDetailWithNoProductsStillReturnsStoreAndEmptyArray() throws Exception {
+    StoreMapper stores = mock(StoreMapper.class);
+    ProductMapper products = mock(ProductMapper.class);
+    Store store = publicStore();
+    store.setBusinessStatus(StoreBusinessStatus.CLOSED.code());
+    when(stores.selectById("cr_store", false)).thenReturn(store);
+    when(products.selectByStore("cr_store", ProductStatus.ON.code(), MAX_LIST_SIZE))
+        .thenReturn(Collections.emptyList());
+    storeMvc(stores, products).perform(request("getStore")
+        .content("{\"action\":\"getStore\",\"storeId\":\"cr_store\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data.store.name").value("测试小店"))
+        .andExpect(jsonPath("$.data.store.isOpen").value(false))
+        .andExpect(jsonPath("$.data.products").isArray())
+        .andExpect(jsonPath("$.data.products").isEmpty());
+  }
+
+  @Test
+  void storeDetailRejectsMissingUnapprovedAndSuspendedStores() throws Exception {
+    StoreMapper stores = mock(StoreMapper.class);
+    ProductMapper products = mock(ProductMapper.class);
+    Store unapproved = publicStore();
+    unapproved.setApprovalStatus("");
+    Store suspended = publicStore();
+    suspended.setPlatformStatus(StorePlatformStatus.SUSPENDED.code());
+    MockMvc realMvc = storeMvc(stores, products);
+    for (Store store : Arrays.asList(null, unapproved, suspended)) {
+      when(stores.selectById("cr_store", false)).thenReturn(store);
+      realMvc.perform(request("getStore")
+          .content("{\"action\":\"getStore\",\"storeId\":\"cr_store\"}"))
+          .andExpect(jsonPath("$.success").value(false))
+          .andExpect(jsonPath("$.message").value("店铺不存在或已暂停"))
+          .andExpect(jsonPath("$.data").doesNotExist());
+    }
+    verifyNoInteractions(products);
   }
 
   @Test

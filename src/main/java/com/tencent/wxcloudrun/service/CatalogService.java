@@ -35,7 +35,9 @@ public class CatalogService {
   public Data store(String id) {
     Store store = stores.selectById(id, false);
     require(visible(store), "店铺不存在或已暂停");
-    return view.data(store).with("products", view.list(products.selectByStore(id, ProductStatus.ON.code(), MAX_LIST_SIZE)));
+    // 与小程序及原云函数保持一致：店铺对象与商品数组位于同一响应层级。
+    return of("store", view.data(store),
+        "products", view.list(products.selectByStore(id, ProductStatus.ON.code(), MAX_LIST_SIZE)));
   }
 
   /** 商家仅修改白名单资料；评分、销量和审核字段仍由服务端维护。 */
